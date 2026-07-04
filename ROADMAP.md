@@ -16,8 +16,22 @@ a seguir em novos collectors: [docs/COLLECTOR_TEMPLATE.md](docs/COLLECTOR_TEMPLA
 | SIM | ✅ collector pronto | `raw_sim` | Óbitos |
 | SINASC | ✅ collector pronto | `raw_sinasc` | Nascidos vivos |
 
-DAGs Airflow ficam para depois: primeiro todos os collectors, mantendo a
-estrutura padronizada (ver template), depois orquestração.
+DAGs Airflow: uma DAG por fonte em `dags/raw_<fonte>.py`, cada uma só
+chamando o `run()` do collector correspondente (`schedule=None`, disparo
+manual — o escopo de cada collector ainda é fixo/hardcoded, não
+parametrizado por data de execução). As 9 DAGs foram validadas de ponta a
+ponta dentro do container real do Airflow (`docker exec ... airflow tasks
+test`), não só localmente: IBGE, CNES, FNS, SIOPS, SISAB, SIH, SIM e SINASC
+rodaram com sucesso; SIA não foi rodado dentro da DAG por levar ~1,5-2h,
+mas a lógica do collector já foi validada fora do Airflow (ver observação
+abaixo).
+
+`docker-compose.override.yml` sobrescreve `POSTGRES_HOST`/`POSTGRES_PORT`
+só no container do `scheduler` (LocalExecutor, onde as tasks rodam de
+fato): o `.env` do projeto aponta para `localhost`, correto para rodar um
+collector via `python -m ...` no host, mas errado de dentro da rede docker
+do Airflow, onde o Postgres é alcançável pelo hostname de serviço
+`postgres`. Exige `astro dev restart` para aplicar.
 
 ## Observações pendentes
 
