@@ -9,18 +9,75 @@ a seguir em novos collectors: [docs/COLLECTOR_TEMPLATE.md](docs/COLLECTOR_TEMPLA
 | IBGE | ✅ collector pronto | `raw_ibge` | Municípios (hierarquia territorial) |
 | CNES | ✅ collector pronto | `raw_cnes` | Estabelecimentos de saúde |
 | SIA | ✅ collector pronto | `raw_sia` | Produção ambulatorial |
-| SIH | planejado | `raw_sih` | Internações |
-| SISAB | planejado | `raw_sisab` | Indicadores de atenção básica |
-| FNS | planejado | `raw_fns` | Repasses/financiamento |
-| SIOPS | planejado | `raw_siops` | Orçamento em saúde |
-| SIM | planejado | `raw_sim` | Óbitos |
-| SINASC | planejado | `raw_sinasc` | Nascidos vivos |
+| SIH | ✅ collector pronto | `raw_sih` | Internações |
+| SISAB | ✅ collector pronto | `raw_sisab` | Indicadores de atenção básica |
+| FNS | ✅ collector pronto | `raw_fns` | Repasses/financiamento |
+| SIOPS | ✅ collector pronto | `raw_siops` | Orçamento em saúde |
+| SIM | ✅ collector pronto | `raw_sim` | Óbitos |
+| SINASC | ✅ collector pronto | `raw_sinasc` | Nascidos vivos |
 
 DAGs Airflow ficam para depois: primeiro todos os collectors, mantendo a
 estrutura padronizada (ver template), depois orquestração.
 
 ## Observações pendentes
 
+- **SIOPS**: a rota candidata original (site legado
+  `siops.datasus.gov.br`) foi abandonada — seu relatório de cálculo do %
+  de saúde (`carregarDadosLC141.php`) retorna respostas de 300+ MB com
+  valores zerados para o Rio de Janeiro em 2021-2024 (bug real do sistema
+  legado, não da nossa coleta). Implementado contra o substituto de fato:
+  **SICONFI** (Tesouro Nacional, API REST pública sem autenticação em
+  `apidatalake.tesouro.gov.br`), endpoint `/rreo`, anexo "RREO-Anexo 14"
+  (Demonstrativo Simplificado, inclui a linha de aplicação mínima em saúde
+  da LC 141/2012). Diferente de SIM/SINASC, **não há atraso**: 2025
+  completo e disponível (todos os 6 bimestres). `run_rreo_anexo14.py` já
+  rodou de ponta a ponta contra o Postgres local (Rio de Janeiro, 2025,
+  bimestre 6 — fechamento do exercício: 80 linhas, 16,98% aplicado em
+  saúde vs. mínimo de 15%, R$ 3,93 bi apurados), idempotente em 2
+  execuções seguidas (delete + insert por partição município+ano+bimestre,
+  sem chave natural de linha). Município identificado pelo código IBGE
+  completo (`cod_ibge`, 7 dígitos, igual `raw_ibge.municipios.id_municipio`)
+  — sem de-para necessário, diferente das fontes DATASUS (código truncado
+  de 6 dígitos) e do FNS (CNPJ).
+- **SIM** e **SINASC**: fontes anuais (não mensais), com atraso de
+  consolidação — 2025 ainda não publicado no FTP do DATASUS para nenhum dos
+  dois. Escopo usa o último ano realmente disponível: SIM ano 2024, SINASC
+  ano 2022 (confirmado direto no FTP). `run_obitos.py` e
+  `run_nascidos_vivos.py` já rodaram de ponta a ponta contra o Postgres
+  local (SIM: 64.704 óbitos do Rio em 2024; SINASC: 69.427 nascimentos do
+  Rio em 2022), ambos com idempotência confirmada em 2 execuções seguidas
+  (delete + insert por partição ano+município, como o SIA — nenhum dos dois
+  tem identificador de registro estável entre execuções).
+- **SIH**: `run_internacoes.py` já rodou o ano completo de 2025 de ponta a
+  ponta contra o Postgres local (12 competências, 355.141 linhas
+  processadas, 352.790 `numero_aih` distintos gravados — a diferença de
+  2.351 é AIH que aparece em mais de 1 competência/arquivo, corretamente
+  absorvida pelo upsert em vez de virar duplicata). ~7-8s por competência
+  (bem mais rápido que o SIA: o grupo RD é 1 arquivo por competência, sem
+  múltiplas partes de 100+MB).
+- **FNS**: `run_repasses.py` já rodou de ponta a ponta contra o Postgres
+  local para 2025 (23 lançamentos, upsert confirmado idempotente em 2
+  execuções seguidas). Volume baixo porque a API de Fundo a Fundo cobre só
+  os lançamentos da conta bancária vinculada ao "Programa Ágil" (código 140)
+  — não é o total histórico de repasses SUS ao município, é o recorte que a
+  API pública realmente expõe.
+- **SISAB**: a rota candidata original (`sisab.saude.gov.br`, painel
+  restrito) e o FTP candidato (`CMD/Dados`, vazio) foram abandonados —
+  nenhum dos dois tinha download simples. Implementado contra a **API de
+  Dados Abertos do Ministério da Saúde (DEMAS)**,
+  `apidadosabertos.saude.gov.br`, endpoint
+  `/atencao-primaria/indicador-desempenho-programa-previne-brasil` — API
+  REST JSON pública, sem autenticação, com filtro nativo por código IBGE
+  do município. Expõe os indicadores de desempenho do Programa Previne
+  Brasil (mesmo cálculo que o SISAB usa para financiamento da APS). O
+  Previne Brasil foi extinto pela Portaria GM/MS Nº 3.493/2024 e
+  substituído por nova metodologia — a série para no 3º quadrimestre de
+  2024 (confirmado: 2025Q1/Q2/Q3 sem dado na API), então o escopo usa o
+  último quadrimestre disponível (2024Q3) em vez do padrão "ano 2025".
+  `run_indicador_desempenho.py` já rodou de ponta a ponta contra o
+  Postgres local (Rio de Janeiro, 2024Q3: 18 linhas — 6 tipos de indicador
+  x 3 visões de equipe), idempotente em 2 execuções seguidas (delete +
+  insert por partição município+quadrimestre).
 - **SIA**: `run_producao_ambulatorial.py` já loopa as 12 competências de 2025
   (escopo aprovado), mas só foi executado de ponta a ponta para 1 mês
   (dez/2025, validado e idempotente). A carga do ano completo (12 meses,
