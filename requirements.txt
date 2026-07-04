@@ -4,3 +4,17 @@
 requests
 psycopg[binary]
 python-dotenv
+
+# CNES (e outras fontes DATASUS: SIA, SIH, SIM, SINASC) distribuem dados em
+# DBC, formato binário proprietário sobre DBF. pysus resolve download FTP +
+# decompressão DBC em uma lib só, evitando reimplementar o decodificador
+# blast do DATASUS. Traz dependências transitivas pesadas (pandas, pyarrow,
+# duckdb, boto3, sqlalchemy) — aceito deliberadamente por cobrir múltiplas
+# fontes DATASUS futuras, não só o CNES.
+# Versão fixada (não solta): o collector do SIA usa pysus.data.dbf_reader,
+# módulo interno sem garantia de API estável entre versões (o catálogo
+# público de pysus.sia() é incompleto para arquivos multi-parte — ver
+# docs/COLLECTOR_TEMPLATE.md — então o SIA usa esse decodificador de baixo
+# nível direto). Atualizar a versão exige reconferir que o módulo continua
+# existindo com a mesma assinatura.
+pysus==2.6.1
