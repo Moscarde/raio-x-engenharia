@@ -1,0 +1,4 @@
+# Dependências de desenvolvimento e teste, não usadas em produção/Airflow.
+pytest
+ruff
+black
