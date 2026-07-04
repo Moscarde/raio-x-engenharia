@@ -158,7 +158,14 @@ dags/       → orquestração Airflow
 include/    → código Python reutilizável pelo Airflow
 dbt/        → projeto dbt
 tests/      → testes automatizados
+docs/       → documentação de apoio (template de collector, fontes candidatas)
 ```
+
+Referências vivas:
+
+* [ROADMAP.md](ROADMAP.md) — status de cada fonte.
+* [docs/fontes.md](docs/fontes.md) — rotas candidatas por fonte e escopo de volume do MVP.
+* [docs/COLLECTOR_TEMPLATE.md](docs/COLLECTOR_TEMPLATE.md) — checklist de arquivos para um novo collector.
 
 Collectors devem ficar em caminho previsível, preferencialmente:
 
@@ -314,6 +321,12 @@ Regras:
 * Evite stubs inline difíceis de entender.
 * Testes devem ser rápidos, independentes, repetíveis e autoexplicativos.
 
+Testes de collector (`tests/collectors/<fonte>/`) rodam com `pytest` puro,
+sem Airflow instalado. Isso é garantido por `pytest.ini`
+(`testpaths = tests/collectors`, `pythonpath = .`). `astro dev pytest`
+continua cobrindo `tests/` inteiro, inclusive `tests/dags/` (que exige
+Airflow), porque passa esse caminho explicitamente e ignora `testpaths`.
+
 ---
 
 ## Dependências
@@ -323,6 +336,12 @@ Regras:
 * Encapsule bibliotecas externas atrás de interfaces simples do projeto.
 * Não adicione dependências novas sem necessidade clara.
 * Prefira biblioteca padrão quando for suficiente.
+
+`requirements.txt` contém dependências de execução (ex. `requests`,
+`psycopg[binary]`, `python-dotenv`) usadas tanto na imagem Astro/Airflow
+quanto no `.venv` local de desenvolvimento. `requirements-dev.txt` contém
+apenas ferramentas de dev/teste (`pytest`, `ruff`, `black`) e nunca entra na
+imagem Airflow.
 
 ---
 
