@@ -222,3 +222,6 @@ __marimo__/
 
 # Opencode
 .opencode/
+
+# VsCode
+.vscode/
