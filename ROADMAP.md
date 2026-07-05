@@ -33,6 +33,26 @@ collector via `python -m ...` no host, mas errado de dentro da rede docker
 do Airflow, onde o Postgres é alcançável pelo hostname de serviço
 `postgres`. Exige `astro dev restart` para aplicar.
 
+## Status de carga de dados (Rio de Janeiro, escopo MVP)
+
+Consultado direto no Postgres local (`select count(*) ... group by
+ano/competência` em cada schema raw). "Completo p/ 2025" avalia contra o
+escopo padrão do MVP (docs/fontes.md#escopo-de-volume-para-o-mvp); fontes
+anuais/periódicas com atraso real de publicação não têm 2025 disponível na
+própria origem (não é falha da coleta, ver Observações pendentes).
+
+| Fonte | Ano/período carregado | Linhas no Postgres | Completo p/ 2025? |
+| --- | --- | --- | --- |
+| IBGE | cadastro corrente (sem recorte de ano) | 5.571 municípios | N/A — não é escopo anual |
+| CNES | 2025-12 (1 competência; cadastro é snapshot, basta 1 mês) | 17.380 | ✅ sim |
+| SIA | 2025-09 a 2025-12 (4 de 12 meses) | 4.838.829 | ❌ **não** — faltam jan-ago/2025; carga completa iniciada em 2026-07-04 em background (~1,5-2h), ver Observações pendentes |
+| SIH | 2025, 12 competências | 352.790 | ✅ sim |
+| FNS | 2025, ano completo (1 chamada de API) | 23 | ✅ sim |
+| SIOPS | 2025, bimestre 6 (fechamento, valores cumulativos) | 80 | ✅ sim |
+| SIM | 2024 (2025 não publicado no DATASUS) | 64.704 | ❌ estrutural — fonte sem 2025 ainda |
+| SINASC | 2022 (2025 não publicado no DATASUS, maior atraso) | 69.427 | ❌ estrutural — fonte sem 2025 ainda |
+| SISAB | 2024Q3 (Previne Brasil extinto em 2024) | 18 | ❌ estrutural — série descontinuada, nunca terá 2025 |
+
 ## Observações pendentes
 
 - **SIOPS**: a rota candidata original (site legado

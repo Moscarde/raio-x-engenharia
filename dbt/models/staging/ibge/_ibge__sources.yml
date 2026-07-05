@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw_ibge
+    schema: raw_ibge
+    description: Municípios do IBGE, carregados por include/collectors/ibge.
+    tables:
+      - name: municipios
+        description: 1 linha por município do Brasil (cadastro corrente, sem recorte de ano).
+        columns:
+          - name: id_municipio
+            description: Código IBGE completo (7 dígitos).
+            data_tests:
+              - unique
+              - not_null

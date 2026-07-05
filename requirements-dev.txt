@@ -1,4 +1,14 @@
 # Dependências de desenvolvimento e teste, não usadas em produção/Airflow.
 pytest
 ruff
-black
+# Travado abaixo de 26: a partir da 26.x, black passou a exigir
+# pathspec>=1.0, incompatível com o pathspec<0.13 que o dbt-core exige.
+black<26
+
+# dbt roda local por enquanto (ver ROADMAP_DBT.md) — DAGs chamando `dbt run`
+# ainda não existem. dbt-core tem dependências próprias que colidem com as
+# do Airflow quando instaladas juntas (problema conhecido, resolvido em
+# outros projetos com Cosmos); manter em requirements-dev.txt evita isso até
+# a orquestração via Airflow ser implementada.
+dbt-core
+dbt-postgres

@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: stg_ibge__municipios
+    description: Municípios do IBGE, tipados a partir de raw_ibge.municipios.
+    columns:
+      - name: id_municipio
+        description: Código IBGE completo (7 dígitos). Chave do município.
+        data_tests:
+          - unique
+          - not_null
+      - name: id_uf
+        data_tests:
+          - not_null
+      - name: id_regiao
+        data_tests:
+          - not_null

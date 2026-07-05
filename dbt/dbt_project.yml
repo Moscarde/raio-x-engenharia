@@ -1,0 +1,26 @@
+name: "raio_x_saude"
+version: "1.0.0"
+config-version: 2
+
+profile: "raio_x_saude"
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Camadas seguem CLAUDE.md (Convenções de Nomeação dbt): staging tipa e
+# aplica de-para; intermediate só existe onde mais de uma mart reaproveita
+# a mesma junção; marts materializa tabela (consumida por BI/portfólio).
+models:
+  raio_x_saude:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table

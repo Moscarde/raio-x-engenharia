@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: dim_municipio
+    description: Dimensão de municípios do Brasil (hierarquia territorial completa do IBGE).
+    columns:
+      - name: id_municipio
+        description: Código IBGE completo (7 dígitos). Chave da dimensão.
+        data_tests:
+          - unique
+          - not_null
