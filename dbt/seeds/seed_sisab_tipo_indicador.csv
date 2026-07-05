@@ -1,0 +1,8 @@
+codigo_tipo_indicador,numero_indicador,descricao_indicador
+10,1,"Proporção de gestantes com pelo menos 6 (seis) consultas pré-natal realizadas, sendo a 1ª até a 12ª semana de gestação"
+20,2,Proporção de gestantes com realização de exames para sífilis e HIV
+30,3,Proporção de gestantes com atendimento odontológico realizado na Atenção Primária à Saúde
+40,4,Proporção de mulheres com coleta de citopatológico na Atenção Primária à Saúde
+50,5,"Proporção de crianças de 1 ano de idade vacinadas na APS contra Difteria, Tétano, Coqueluche, Hepatite B, Haemophilus Influenzae tipo b e Poliomielite Inativada"
+60,6,"Proporção de pessoas com hipertensão, com consulta e pressão arterial aferida no semestre"
+70,7,"Proporção de pessoas com diabetes, com consulta e hemoglobina glicada solicitada no semestre"

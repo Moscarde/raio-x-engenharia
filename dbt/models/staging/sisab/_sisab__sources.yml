@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw_sisab
+    schema: raw_sisab
+    description: Indicadores de desempenho do Previne Brasil (SISAB via DEMAS), carregados por include/collectors/sisab.
+    tables:
+      - name: indicador_desempenho
+        description: 1 linha por indicador x visão de equipe (2024Q3 — série descontinuada, ver ROADMAP.md).

@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw_siops
+    schema: raw_siops
+    description: RREO-Anexo 14 (SICONFI), carregado por include/collectors/siops.
+    tables:
+      - name: rreo_anexo14
+        description: 1 linha por conta do demonstrativo (2025, bimestre de fechamento).

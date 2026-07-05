@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: int_ibge__municipio_codigo6
+    description: >
+      Bridge entre o código IBGE de 6 dígitos (sem dígito verificador,
+      usado pelas fontes DATASUS/SISAB) e o id_municipio completo (7
+      dígitos) do dim_municipio.
+    columns:
+      - name: id_municipio
+        data_tests:
+          - unique
+          - not_null
+      - name: cod_municipio_ibge6
+        description: >
+          Único por construção (o 7º dígito é um dígito verificador
+          calculado a partir dos 6 primeiros — não deveria haver colisão
+          entre municípios diferentes). Testado para confirmar.
+        data_tests:
+          - unique
+          - not_null

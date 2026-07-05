@@ -23,3 +23,55 @@ seeds:
       - name: descricao_natureza_juridica
         data_tests:
           - not_null
+
+  - name: seed_sisab_tipo_indicador
+    description: >
+      De-para do codigo_tipo_indicador (10/20/30/40/50/60/70) da API DEMAS
+      para o número e a descrição oficial do indicador do Programa Previne
+      Brasil. Fonte: notas técnicas da Secretaria de Atenção Primária à
+      Saúde/MS linkadas no próprio dataset do DEMAS
+      (Nota_tecnica_2022_2024_indicador_{1..7}.pdf, em
+      https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/sisab/indicadores_desempenho/),
+      consultadas em 2026-07-04 via extração de texto (pdftotext) da seção
+      "INDICADOR N" de cada PDF. Cobertura: os 6 códigos observados em
+      raw_sisab.indicador_desempenho (Rio de Janeiro, 2024Q3: 10, 20, 30,
+      40, 50, 70) foram confirmados um a um contra o PDF correspondente. O
+      código 60 (indicador 6) não aparece nos dados reais mas foi incluído
+      pra completude, mesma fonte. A correspondência
+      codigo_tipo_indicador = numero_indicador * 10 é inferida do padrão
+      numérico observado (nenhum endpoint do DEMAS documenta esse mapa
+      diretamente) — cada linha foi conferida individualmente, não é só
+      uma suposição de fórmula.
+    columns:
+      - name: codigo_tipo_indicador
+        data_tests:
+          - unique
+          - not_null
+      - name: numero_indicador
+        data_tests:
+          - unique
+          - not_null
+
+  - name: seed_fns_ente_municipio
+    description: >
+      De-para do CNPJ do ente (como o FNS identifica quem recebe o
+      repasse) para o id_municipio (código IBGE completo). Fonte: API
+      Fundo a Fundo do FNS
+      (https://api.transferegov.gestao.gov.br/fundoafundo/gestao_financeira_lancamentos),
+      confirmada em 2026-07-04 ao consultar
+      nome_ente_solicitante_gestao_financeira pro CNPJ 42498733000148 →
+      "MUNICIPIO DE RIO DE JANEIRO" (ver
+      include/collectors/fns/parser.py). Cobertura: 1 de 1 — único ente no
+      escopo do MVP.
+    columns:
+      - name: cnpj_ente
+        data_tests:
+          - unique
+          - not_null
+      - name: id_municipio
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio

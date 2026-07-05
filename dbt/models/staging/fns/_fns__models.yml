@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: stg_fns__repasses
+    description: Lançamentos financeiros de Fundo a Fundo do FNS, tipados.
+    columns:
+      - name: id_lancamento
+        data_tests:
+          - unique
+          - not_null
+      - name: tipo_operacao
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [credito, debito]

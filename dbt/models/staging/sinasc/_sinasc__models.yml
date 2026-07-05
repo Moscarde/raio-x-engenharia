@@ -1,0 +1,5 @@
+version: 2
+
+models:
+  - name: stg_sinasc__nascidos_vivos
+    description: Nascidos vivos do SINASC, tipados.

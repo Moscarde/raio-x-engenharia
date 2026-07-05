@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: stg_sih__internacoes
+    description: Internações do SIH, tipadas.
+    columns:
+      - name: numero_aih
+        data_tests:
+          - unique
+          - not_null

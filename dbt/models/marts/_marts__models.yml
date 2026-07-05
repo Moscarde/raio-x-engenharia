@@ -18,3 +18,88 @@ models:
         data_tests:
           - unique
           - not_null
+
+  - name: fct_internacoes
+    description: Internações hospitalares do SIH (2025, ano completo).
+    columns:
+      - name: numero_aih
+        data_tests:
+          - unique
+          - not_null
+      - name: id_municipio_estabelecimento
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+      - name: codigo_cnes_estabelecimento
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_estabelecimento')
+                field: codigo_cnes
+              config:
+                severity: warn
+
+  - name: fct_obitos
+    description: Óbitos do SIM (2024 — último ano publicado no DATASUS).
+    columns:
+      - name: id_municipio_ocorrencia
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+
+  - name: fct_nascidos_vivos
+    description: Nascidos vivos do SINASC (2022 — último ano publicado no DATASUS).
+    columns:
+      - name: id_municipio_nascimento
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+
+  - name: mart_repasses_fns
+    description: Lançamentos de Fundo a Fundo do FNS (2025), com município resolvido.
+    columns:
+      - name: id_lancamento
+        data_tests:
+          - unique
+          - not_null
+      - name: id_municipio
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+
+  - name: mart_financiamento_saude_siops
+    description: RREO-Anexo 14 do SICONFI (2025), formato long (1 linha por conta/coluna).
+    columns:
+      - name: id_municipio
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+
+  - name: mart_indicadores_aps
+    description: Indicadores de desempenho do Previne Brasil (2024Q3 — série descontinuada).
+    columns:
+      - name: id_municipio
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+      - name: numero_indicador
+        data_tests:
+          - not_null

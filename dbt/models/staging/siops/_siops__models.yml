@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: stg_siops__rreo_anexo14
+    description: RREO-Anexo 14 do SICONFI, passthrough tipado (já vem tipado da origem).
+    columns:
+      - name: id_municipio
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio

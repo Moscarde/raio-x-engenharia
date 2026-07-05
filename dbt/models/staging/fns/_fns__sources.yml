@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: raw_fns
+    schema: raw_fns
+    description: Lançamentos financeiros de Fundo a Fundo do FNS, carregados por include/collectors/fns.
+    tables:
+      - name: repasses
+        description: 1 linha por lançamento (crédito ou débito), ano 2025.
+        columns:
+          - name: id_lancamento
+            data_tests:
+              - unique
+              - not_null

@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw_sinasc
+    schema: raw_sinasc
+    description: Nascidos vivos do SINASC, carregados por include/collectors/sinasc.
+    tables:
+      - name: nascidos_vivos
+        description: 1 linha por nascimento (ano 2022 — último ano publicado no FTP do DATASUS).

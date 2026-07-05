@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw_sim
+    schema: raw_sim
+    description: Óbitos do SIM, carregados por include/collectors/sim.
+    tables:
+      - name: obitos
+        description: 1 linha por óbito (ano 2024 — último ano publicado no FTP do DATASUS).

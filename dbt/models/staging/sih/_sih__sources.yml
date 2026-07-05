@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw_sih
+    schema: raw_sih
+    description: Internações hospitalares do SIH, carregadas por include/collectors/sih.
+    tables:
+      - name: internacoes
+        description: 1 linha por AIH (2025, 12 competências).
+        columns:
+          - name: numero_aih
+            description: Número da AIH. Chave natural da internação.
+            data_tests:
+              - unique
+              - not_null

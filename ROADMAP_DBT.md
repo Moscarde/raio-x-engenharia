@@ -6,23 +6,56 @@ em [CLAUDE.md](CLAUDE.md#convenções-de-nomeação-dbt).
 
 ## Status
 
-- ✅ Etapa 1 — scaffold (`dbt_project.yml`, `profiles.yml`, macro de schema
-  exato) + `stg_ibge__municipios` + `dim_municipio`. `dbt run`/`dbt test`
-  rodados de ponta a ponta (5.571 municípios, 8 testes ok).
+- ✅ Etapa 1 — scaffold + `stg_ibge__municipios` + `dim_municipio`.
 - ✅ Etapa 2 — `stg_cnes__estabelecimentos` + `dim_estabelecimento` +
-  `seed_cnes_natureza_juridica` (22/25 códigos verificados contra a
-  Receita Federal, ver seção de seeds abaixo). Rodado de ponta a ponta
-  (17.380 estabelecimentos, 21 testes ok, incluindo `accepted_values` dos
-  5 campos decodificados inline).
-- ⬜ Etapas 3-8 — planejadas, não iniciadas.
+  `seed_cnes_natureza_juridica`.
+- ✅ Etapa 3 — `int_ibge__municipio_codigo6` (bridge 6↔7 dígitos).
+- ✅ Etapa 4 — `stg_sih__internacoes` + `fct_internacoes`.
+- ✅ Etapa 6 — `stg_sim__obitos` + `fct_obitos`,
+  `stg_sinasc__nascidos_vivos` + `fct_nascidos_vivos`.
+- ✅ Etapa 7 — `stg_fns__repasses` + `stg_siops__rreo_anexo14` +
+  `mart_repasses_fns` + `mart_financiamento_saude_siops` (2 marts
+  separados, não 1 — ver nota abaixo).
+- ✅ Etapa 8 — `stg_sisab__indicador_desempenho` +
+  `seed_sisab_tipo_indicador` + `mart_indicadores_aps`.
+- ⬜ Etapa 5 — `stg_sia__producao_ambulatorial` + `fct_producao_ambulatorial`.
+  Bloqueada: aguardando a carga completa de 2025 do SIA terminar (ver
+  ROADMAP.md — corrompida por queda de energia em 2026-07-04, refeita).
 
-## Tabelas raw disponíveis (ponto de partida)
+Rodado de ponta a ponta a cada etapa (`dbt seed && dbt run && dbt test`):
+**17 models, 3 seeds, 65 testes, tudo passando.**
+
+## Ajustes de design feitos durante a implementação
+
+Duas decisões do planejamento original mudaram ao encostar no dado real —
+registradas aqui em vez de só no histórico do git, pra quem ler este
+roadmap não achar que a tabela abaixo ("Camada intermediate"/"marts")
+ainda reflete o que foi construído.
+
+- **Sem "int_saude__eventos_com_municipio" único.** O plano original
+  previa 1 intermediate unindo SIH+SIM+SINASC+SIA num model só. Na prática
+  isso não faz sentido: cada fonte tem grão e colunas completamente
+  diferentes (internação ≠ óbito ≠ nascimento), forçar união exigiria uma
+  UNION com preenchimento de coluna genérica sem ganho real. O que
+  realmente se repetia entre as 3 fontes era só a *resolução* do código
+  IBGE de 6 dígitos pra `id_municipio` (7 dígitos) — isso virou
+  `int_ibge__municipio_codigo6`, um bridge pequeno e reutilizável (join
+  direto em cada fct), não um model que "junta os eventos".
+- **`mart_financiamento_saude` virou 2 marts, não 1.** FNS é ledger
+  transacional (R$, crédito/débito) e SIOPS é demonstrativo fiscal
+  agregado (mistura contas em R$ e percentuais no mesmo formato "long").
+  Somar as duas fontes numa tabela só misturaria unidades incompatíveis
+  (não dá pra somar R$ com %). Ficaram `mart_repasses_fns` e
+  `mart_financiamento_saude_siops`, cada um fiel à granularidade real da
+  própria fonte.
+
+## Tabelas raw disponíveis
 
 | Raw | Grão | Volume (Rio, escopo atual) |
 | --- | --- | --- |
 | `raw_ibge.municipios` | 1 linha por município (Brasil inteiro) | 5.571 |
 | `raw_cnes.estabelecimentos` | 1 linha por estabelecimento (competência 2025-12) | 17.380 |
-| `raw_sia.producao_ambulatorial` | 1 linha por procedimento produzido | ~56M (12 meses/2025) |
+| `raw_sia.producao_ambulatorial` | 1 linha por procedimento produzido | ~56M (12 meses/2025, carga em andamento) |
 | `raw_sih.internacoes` | 1 linha por AIH (`numero_aih`) | 352.790 (2025) |
 | `raw_sim.obitos` | 1 linha por óbito | 64.704 (2024) |
 | `raw_sinasc.nascidos_vivos` | 1 linha por nascimento | 69.427 (2022) |
@@ -32,22 +65,17 @@ em [CLAUDE.md](CLAUDE.md#convenções-de-nomeação-dbt).
 
 ## Camada staging (`stg_<fonte>__<entidade>`)
 
-Responsabilidade: tipar campos (as fontes DBC chegam cruas como `TEXT`),
-renomear só o que ainda não estiver claro, e aplicar o de-para de código
-DATASUS → valor legível quando fizer sentido (ver limitações documentadas
-em `docs/COLLECTOR_TEMPLATE.md`). Sem regra de negócio nem agregação.
-
-| Model | Fonte | Observação de tipagem/de-para |
+| Model | Fonte | O que foi feito |
 | --- | --- | --- |
-| `stg_ibge__municipios` | `raw_ibge.municipios` | ✅ Implementado. Já vem tipado (INTEGER/TEXT); staging é praticamente passthrough. |
-| `stg_cnes__estabelecimentos` | `raw_cnes.estabelecimentos` | ✅ Implementado. `competencia` → DATE (`to_date(..., 'YYYYMM')`); `tipo_pessoa`, `nivel_dependencia`, `atividade_ensino`, `tipo_gestao`, `vinculo_sus` decodificados inline (domínios pequenos, verificados contra dado real — ver `accepted_values` no model); `natureza_juridica` decodificado via seed (22/25 códigos); `tipo_unidade` (31 códigos) e `esfera_administrativa` ficam crus — sem fonte oficial verificável encontrada pro 1º, e o 2º tem valor real (M/E) que diverge do domínio oficial descrito (01-04/99), documentado no `.sql`. |
-| `stg_sia__producao_ambulatorial` | `raw_sia.producao_ambulatorial` | CAST de `idade_paciente`, `quantidade_*`, `valor_*` (TEXT → NUMERIC/INT); `competencia` (TEXT `AAAAMM`) → DATE do 1º dia do mês. |
-| `stg_sih__internacoes` | `raw_sih.internacoes` | CAST de `data_internacao`/`data_saida` (TEXT `AAAAMMDD`) → DATE; `dias_permanencia`/`valor_total` → INT/NUMERIC; `indicador_obito` → BOOLEAN. |
-| `stg_sim__obitos` | `raw_sim.obitos` | CAST de `data_obito`/`data_nascimento` (TEXT `DDMMAAAA`, não `AAAAMMDD` — confirmar formato real) → DATE; **`idade`** usa o formato DATASUS de 3 dígitos (1º dígito = unidade: 0=minutos...5=anos; decodificar aqui, não deixar pra mart). |
-| `stg_sinasc__nascidos_vivos` | `raw_sinasc.nascidos_vivos` | CAST de `data_nascimento` (TEXT) → DATE; `peso_gramas`, `apgar1`, `apgar5`, `numero_consultas_prenatal` → INT. |
-| `stg_fns__repasses` | `raw_fns.repasses` | Já vem tipado (NUMERIC/DATE) — passthrough; renomear `tipo_operacao` C/D para rótulo (`credito`/`debito`) opcional. |
-| `stg_siops__rreo_anexo14` | `raw_siops.rreo_anexo14` | Já vem tipado (NUMERIC) — passthrough. Formato é "long" (1 linha por conta); considerar pivot só na mart, não aqui. |
-| `stg_sisab__indicador_desempenho` | `raw_sisab.indicador_desempenho` | Já vem tipado — passthrough; de-para de `codigo_tipo_indicador` (10/20/30/40/50/70) para o nome do indicador Previne Brasil precisa de seed (não está na API). |
+| `stg_ibge__municipios` | `raw_ibge.municipios` | ✅ Já vem tipado; passthrough. |
+| `stg_cnes__estabelecimentos` | `raw_cnes.estabelecimentos` | ✅ `competencia` → DATE; `tipo_pessoa`, `nivel_dependencia`, `atividade_ensino`, `tipo_gestao`, `vinculo_sus` decodificados inline (verificados contra dado real, `accepted_values` passando); `natureza_juridica` via seed (22/25 códigos); `tipo_unidade` e `esfera_administrativa` ficam crus (ver seção de seeds e o comentário no `.sql`). |
+| `stg_sih__internacoes` | `raw_sih.internacoes` | ✅ `data_internacao`/`data_saida` (TEXT `AAAAMMDD`) → DATE; `dias_permanencia`/`valor_total` → INT/NUMERIC; `indicador_obito` → `houve_obito` BOOLEAN. |
+| `stg_sim__obitos` | `raw_sim.obitos` | ✅ `data_obito`/`data_nascimento` (TEXT `DDMMAAAA`, confirmado — não `AAAAMMDD`) → DATE; `idade` decodificada em `idade_unidade` + `idade_valor` (código composto do SIM: 1º dígito = unidade; sentinelas "000" e "999" = idade não informada, confirmado contra dado real — 167 óbitos com "999"). |
+| `stg_sinasc__nascidos_vivos` | `raw_sinasc.nascidos_vivos` | ✅ `data_nascimento` → DATE; `peso_gramas`, `numero_consultas_prenatal`, `idade_mae` → INT; `apgar1`/`apgar5` → INT com `nullif('')` (359/307 linhas vêm vazias — não medido, confirmado contra dado real, não é falha do collector). |
+| `stg_fns__repasses` | `raw_fns.repasses` | ✅ Já vem tipado; `tipo_operacao` C/D → `credito`/`debito`. |
+| `stg_siops__rreo_anexo14` | `raw_siops.rreo_anexo14` | ✅ Já vem tipado; passthrough (formato "long" mantido, pivot não valeu a pena pro volume atual — 80 linhas). |
+| `stg_sisab__indicador_desempenho` | `raw_sisab.indicador_desempenho` | ✅ `codigo_tipo_indicador` decodificado via seed (`seed_sisab_tipo_indicador`) pro número e descrição oficial do indicador Previne Brasil. |
+| `stg_sia__producao_ambulatorial` | `raw_sia.producao_ambulatorial` | ⬜ Pendente (etapa 5, bloqueada pela carga do SIA). |
 
 ## Seeds (de-para)
 
@@ -60,74 +88,72 @@ cobertura.
   (consultada 2026-07-04). 22 dos 25 códigos reais confirmados; 4000,
   2305, 2313 (~28% das linhas) ficam de fora, sem fonte verificável
   encontrada — join retorna `NULL` pra eles, de propósito.
+- ✅ `seed_sisab_tipo_indicador.csv` — fonte: notas técnicas da
+  SAPS/MS linkadas no dataset do DEMAS (consultadas 2026-07-04 via
+  `pdftotext`). Os 6 códigos observados no dado real (10-50, 70) mais o 60
+  (não observado, incluído por completude) confirmados um a um.
+- ✅ `seed_fns_ente_municipio.csv` — fonte: API Fundo a Fundo do FNS,
+  confirmada contra a própria API em 2026-07-04. 1 de 1 (único ente no
+  MVP).
 - ⬜ `seed_cnes_tipo_unidade.csv` — pendente. 31 códigos distintos na
   competência 2025-12; nenhuma fonte oficial machine-readable encontrada
-  ainda (páginas encontradas nas buscas eram parciais ou não
-  estruturadas). `tipo_unidade` fica cru em `stg_cnes__estabelecimentos`
-  até isso ser resolvido.
-- ⬜ `seed_sisab_tipo_indicador.csv` — pendente. De-para `codigo_tipo_indicador` → nome do indicador Previne Brasil (fonte candidata: `Nota_tecnica_*_indicador_*.pdf`, já linkados no dataset do DEMAS, ver ROADMAP.md — são PDFs, exigem extração manual do texto, não um CSV pronto).
-- CID-10 (causa_basica do SIM) e CBO (códigos de ocupação do SIA/SIH) ficam de fora do MVP inicial — tabelas grandes (milhares de códigos), tratar como etapa futura se um mart precisar do nome legível.
+  ainda. `tipo_unidade` fica cru em `stg_cnes__estabelecimentos`.
+- CID-10 (causa_basica do SIM) e CBO (códigos de ocupação do SIA/SIH)
+  ficam de fora do MVP — tabelas grandes (milhares de códigos), etapa
+  futura se um mart precisar do nome legível.
 
 ## Camada intermediate (`int_<domínio>__<algo>`)
 
-Só onde há junção ou regra de negócio real que mais de uma mart vai
-reaproveitar — evitar criar intermediate só por criar (ver CLAUDE.md,
-"evitar abstrações prematuras"):
-
-| Model | Junta | Por quê intermediate (não direto na mart) |
+| Model | Status | O que faz |
 | --- | --- | --- |
-| `int_saude__eventos_com_municipio` | SIH + SIM + SINASC + SIA, cada um com seu `cod_municipio_ibge6_*` | Resolver o de-para código IBGE 6 dígitos → `dim_municipio` (7 dígitos) uma vez só, reaproveitado por 4 fatos diferentes. |
-| `int_saude__financiamento_anual` | FNS + SIOPS, ambos por ano | Unidades de identificação de ente diferentes (CNPJ no FNS, `cod_ibge` no SIOPS) — resolver o de-para uma vez antes da mart consolidada. |
+| `int_ibge__municipio_codigo6` | ✅ Implementado | Bridge `id_municipio` (7 dígitos) ↔ `cod_municipio_ibge6` (6 dígitos, `left(id_municipio::text, 6)`). Reaproveitado por `fct_internacoes`, `fct_obitos`, `fct_nascidos_vivos`, `mart_indicadores_aps` e (quando a etapa 5 sair) `fct_producao_ambulatorial`. |
 
 ## Camada marts
 
-| Model | Tipo | Grão | Fontes |
+| Model | Tipo | Grão | Status |
 | --- | --- | --- | --- |
-| `dim_municipio` | dim | 1 por município | `stg_ibge__municipios` |
-| `dim_estabelecimento` | dim | 1 por `codigo_cnes` | `stg_cnes__estabelecimentos` |
-| `fct_producao_ambulatorial` | fct | 1 por procedimento produzido | `stg_sia__producao_ambulatorial` + `int_saude__eventos_com_municipio` |
-| `fct_internacoes` | fct | 1 por AIH | `stg_sih__internacoes` + `int_saude__eventos_com_municipio` |
-| `fct_obitos` | fct | 1 por óbito | `stg_sim__obitos` + `int_saude__eventos_com_municipio` |
-| `fct_nascidos_vivos` | fct | 1 por nascimento | `stg_sinasc__nascidos_vivos` + `int_saude__eventos_com_municipio` |
-| `mart_financiamento_saude` | mart | 1 por ano/ente | `int_saude__financiamento_anual` |
-| `mart_indicadores_aps` | mart | 1 por indicador/quadrimestre | `stg_sisab__indicador_desempenho` |
+| `dim_municipio` | dim | 1 por município | ✅ |
+| `dim_estabelecimento` | dim | 1 por `codigo_cnes` | ✅ |
+| `fct_internacoes` | fct | 1 por AIH | ✅ |
+| `fct_obitos` | fct | 1 por óbito | ✅ |
+| `fct_nascidos_vivos` | fct | 1 por nascimento | ✅ |
+| `mart_repasses_fns` | mart | 1 por lançamento | ✅ |
+| `mart_financiamento_saude_siops` | mart | 1 por conta/coluna do RREO | ✅ |
+| `mart_indicadores_aps` | mart | 1 por indicador/visão de equipe | ✅ |
+| `fct_producao_ambulatorial` | fct | 1 por procedimento produzido | ⬜ etapa 5 |
 
-`mart_financiamento_saude` e `mart_indicadores_aps` ficam como mart (não
-fct) porque não têm grão transacional — são indicadores/agregados já
-calculados na origem, não eventos individuais.
+## Testes dbt (65 rodando)
 
-## Testes dbt planejados
+- `unique` + `not_null` na chave de grão de cada fct/dim/seed.
+- `relationships` de cada fct/mart para `dim_municipio` (e
+  `dim_estabelecimento` onde aplicável — em `fct_internacoes`, com
+  `severity: warn` em vez de `error`, porque nem toda internação do ano
+  precisa ter o estabelecimento presente no snapshot único do CNES de
+  dez/2025).
+- `accepted_values` nos campos decodificados inline (CNES) e em
+  `idade_unidade` (SIM) — pegou 2 bugs reais durante a implementação (ver
+  histórico do commit): o sentinela SIM "999" não estava na lista aceita,
+  e 2 colunas do SINASC (`apgar1`/`apgar5`) vinham vazias em vez de `NULL`
+  e quebravam o CAST.
 
-- `unique` + `not_null` na chave de grão de cada fct (`numero_aih`,
-  `codigo_cnes`, etc.) e de cada dim (`id_municipio`).
-- `relationships` de cada fct para `dim_municipio` (e `dim_estabelecimento`
-  onde aplicável) — pega quebra de de-para código 6 dígitos → 7 dígitos
-  cedo.
-- `accepted_values` nos campos decodificados por seed (`tipo_unidade`,
-  `codigo_tipo_indicador`), garantindo que todo código do raw tem
-  correspondência no seed.
+## Ordem de implementação (só falta a 5)
 
-## Ordem de implementação sugerida
-
-1. `dbt/` scaffold (`dbt_project.yml`, `profiles.yml`, schemas
-   staging/intermediate/marts) + `stg_ibge__municipios` + `dim_municipio`
-   — base de todos os joins por município.
-2. `stg_cnes__estabelecimentos` + `dim_estabelecimento` + seeds de
-   de-para do CNES.
-3. `int_saude__eventos_com_municipio` (assim que o 2º fato precisar dele —
-   não antes).
-4. `stg_sih__internacoes` + `fct_internacoes` (fonte já 100% completa
-   pra 2025, bom primeiro fato pra validar o padrão).
-5. `stg_sia__producao_ambulatorial` + `fct_producao_ambulatorial` (maior
-   volume — validar performance de materialização, ex. incremental por
-   competência).
-6. `stg_sim__obitos` + `fct_obitos`, `stg_sinasc__nascidos_vivos` +
+1. ✅ scaffold + `stg_ibge__municipios` + `dim_municipio`.
+2. ✅ `stg_cnes__estabelecimentos` + `dim_estabelecimento` + seed de
+   natureza jurídica.
+3. ✅ `int_ibge__municipio_codigo6`.
+4. ✅ `stg_sih__internacoes` + `fct_internacoes`.
+5. ⬜ `stg_sia__producao_ambulatorial` + `fct_producao_ambulatorial` —
+   aguardando carga completa 2025 do SIA (maior volume — considerar
+   incremental por competência quando implementar, dado o volume ~56M
+   linhas).
+6. ✅ `stg_sim__obitos` + `fct_obitos`, `stg_sinasc__nascidos_vivos` +
    `fct_nascidos_vivos`.
-7. `stg_fns__repasses` + `stg_siops__rreo_anexo14` +
-   `int_saude__financiamento_anual` + `mart_financiamento_saude`.
-8. `stg_sisab__indicador_desempenho` + seed de indicadores +
+7. ✅ `stg_fns__repasses` + `stg_siops__rreo_anexo14` +
+   `mart_repasses_fns` + `mart_financiamento_saude_siops`.
+8. ✅ `stg_sisab__indicador_desempenho` + seed de indicadores +
    `mart_indicadores_aps`.
 
-DAGs Airflow chamando `dbt run`/`dbt test` ficam para depois de pelo menos
-a etapa 4 existir (primeiro model + teste rodando local via `dbt run`,
-antes de orquestrar).
+DAGs Airflow chamando `dbt run`/`dbt test` ficam para depois da etapa 5
+(todas as fontes com pelo menos 1 model rodando local, antes de
+orquestrar).

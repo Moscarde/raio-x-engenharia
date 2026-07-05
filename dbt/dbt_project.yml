@@ -22,6 +22,7 @@ seeds:
     +schema: staging
     +column_types:
       codigo_natureza_juridica: text
+      cnpj_ente: text
 
 # Camadas seguem CLAUDE.md (Convenções de Nomeação dbt): staging tipa e
 # aplica de-para; intermediate só existe onde mais de uma mart reaproveita
@@ -30,6 +31,9 @@ models:
   raio_x_saude:
     staging:
       +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
       +materialized: view
     marts:
       +schema: marts

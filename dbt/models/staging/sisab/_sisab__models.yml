@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: stg_sisab__indicador_desempenho
+    description: Indicadores de desempenho do Previne Brasil, com nome/descrição do indicador via seed.
+    columns:
+      - name: numero_indicador
+        data_tests:
+          - not_null
+      - name: codigo_municipio
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('int_ibge__municipio_codigo6')
+                field: cod_municipio_ibge6
