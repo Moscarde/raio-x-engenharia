@@ -45,7 +45,7 @@ própria origem (não é falha da coleta, ver Observações pendentes).
 | --- | --- | --- | --- |
 | IBGE | cadastro corrente (sem recorte de ano) | 5.571 municípios | N/A — não é escopo anual |
 | CNES | 2025-12 (1 competência; cadastro é snapshot, basta 1 mês) | 17.380 | ✅ sim |
-| SIA | recarregando (estado inteiro, não só Rio — mudança de escopo em 2026-07-04) | em andamento | ⏳ recarga em progresso, ver Observações pendentes |
+| SIA | 2025, 12 competências (estado RJ inteiro, não só Rio) | 99.927.543 | ✅ sim |
 | SIH | 2025, 12 competências | 352.790 | ✅ sim |
 | FNS | 2025, ano completo (1 chamada de API) | 23 | ✅ sim |
 | SIOPS | 2025, bimestre 6 (fechamento, valores cumulativos) | 80 | ✅ sim |
@@ -159,7 +159,15 @@ própria origem (não é falha da coleta, ver Observações pendentes).
 
   Tabela foi derrubada e recriada (schema novo com `competencia_arquivo`,
   dado anterior já estava incorreto de qualquer forma) antes de reiniciar
-  a carga pela 4ª vez. Rodar manualmente quando fizer sentido:
-  `python -m include.collectors.sia.run_producao_ambulatorial`. Estimativa
-  de 1,5-2h de execução (pode aumentar por carregar o estado inteiro em
-  vez de só Rio).
+  a carga pela 4ª vez.
+
+  ✅ **Carga completa concluída em 2026-07-05**: 12/12 competências,
+  **99.927.543 linhas**, 8.906s (~2h28) — terminou normal, sem OOM desta
+  vez (memória ficou crítica em vários pontos, chegou a 163Mi disponível,
+  mas sobreviveu). Confirmado por competência (`competencia_arquivo`):
+  jan=7.535.342, fev=7.494.257, mar=7.806.475, abr=8.241.360,
+  mai=8.483.346, jun=7.515.423, jul=9.277.389, ago=8.729.858,
+  set=9.216.984, out=8.998.937, nov=8.435.115, dez=8.193.057 — todas
+  batendo com o log, nenhuma sobrescrita pelo bug de partição (corrigido
+  acima). Rodar manualmente quando fizer sentido:
+  `python -m include.collectors.sia.run_producao_ambulatorial`.

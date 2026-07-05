@@ -19,9 +19,10 @@ em [CLAUDE.md](CLAUDE.md#convenções-de-nomeação-dbt).
 - ✅ Etapa 8 — `stg_sisab__indicador_desempenho` +
   `seed_sisab_tipo_indicador` + `mart_indicadores_aps`.
 - ⬜ Etapa 5 — `stg_sia__producao_ambulatorial` + `fct_producao_ambulatorial`.
-  Bloqueada: aguardando a carga completa de 2025 do SIA terminar (ver
-  ROADMAP.md). Escopo do SIA mudou em 2026-07-04 — agora carrega o
-  **estado (UF) inteiro**, não só o Rio (ver ROADMAP.md e
+  Não bloqueada mais: a carga completa de 2025 do SIA terminou em
+  2026-07-05 (99.927.543 linhas, estado RJ inteiro, ver ROADMAP.md) — só
+  não foi implementada ainda. Escopo do SIA mudou em 2026-07-04 — agora
+  carrega o **estado (UF) inteiro**, não só o Rio (ver ROADMAP.md e
   docs/fontes.md#escopo-de-volume-para-o-mvp); `fct_producao_ambulatorial`
   quando implementada não deve filtrar por município por padrão (ou deve
   expor o filtro como parâmetro da query/mart, não do model).
@@ -59,7 +60,7 @@ ainda reflete o que foi construído.
 | --- | --- | --- |
 | `raw_ibge.municipios` | 1 linha por município (Brasil inteiro) | 5.571 |
 | `raw_cnes.estabelecimentos` | 1 linha por estabelecimento (competência 2025-12) | 17.380 |
-| `raw_sia.producao_ambulatorial` | 1 linha por procedimento produzido | ~90M (12 meses/2025, RJ inteiro — não só Rio; carga em andamento) |
+| `raw_sia.producao_ambulatorial` | 1 linha por procedimento produzido | 99.927.543 (12 meses/2025, RJ inteiro — não só Rio) |
 | `raw_sih.internacoes` | 1 linha por AIH (`numero_aih`) | 352.790 (2025) |
 | `raw_sim.obitos` | 1 linha por óbito | 64.704 (2024) |
 | `raw_sinasc.nascidos_vivos` | 1 linha por nascimento | 69.427 (2022) |
@@ -148,9 +149,9 @@ cobertura.
 3. ✅ `int_ibge__municipio_codigo6`.
 4. ✅ `stg_sih__internacoes` + `fct_internacoes`.
 5. ⬜ `stg_sia__producao_ambulatorial` + `fct_producao_ambulatorial` —
-   aguardando carga completa 2025 do SIA (maior volume — considerar
-   incremental por competência quando implementar, dado o volume ~90M
-   linhas, RJ inteiro).
+   carga completa 2025 do SIA já terminou (99.927.543 linhas, RJ inteiro);
+   falta só implementar o model. Considerar incremental por competência
+   dado o volume.
 6. ✅ `stg_sim__obitos` + `fct_obitos`, `stg_sinasc__nascidos_vivos` +
    `fct_nascidos_vivos`.
 7. ✅ `stg_fns__repasses` + `stg_siops__rreo_anexo14` +
