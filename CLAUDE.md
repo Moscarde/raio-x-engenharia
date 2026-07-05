@@ -261,6 +261,38 @@ stg_sisab__indicadores
 
 ---
 
+## Seeds e dicionários externos (de-para)
+
+Todo seed em `dbt/seeds/` que traduz código de fonte (DATASUS, IBGE, etc.)
+para valor legível precisa de rastreabilidade da própria fonte, não só do
+dado que ele decodifica. Isso facilita auditoria futura: alguém revisando
+o dado precisa achar rápido de onde veio o de-para, quando foi consultado,
+e o que ficou sem cobertura.
+
+Regras:
+
+* Todo seed de de-para tem uma entrada correspondente em
+  `dbt/seeds/_seeds__models.yml` (ou arquivo equivalente por domínio), com
+  `description` contendo:
+  * URL da fonte oficial consultada.
+  * Data em que foi consultada (dado externo muda; a data marca a validade
+    da cópia local).
+  * Cobertura: quantos códigos do domínio real foram verificados vs. total
+    de códigos distintos observados na fonte (ex.: "22 de 25 códigos
+    confirmados contra a Tabela II da Receita Federal; 4000, 2305, 2313
+    sem confirmação, ficam de fora do seed").
+* Nunca adivinhar/inventar valor de código sem fonte verificável. Código
+  sem confirmação fica de fora do seed (o join em staging retorna `NULL`
+  para ele) — `NULL` documentado é melhor que rótulo errado.
+* Se a fonte for uma página HTML sem API, preferir extrair valores exatos
+  (grep pelo código, não pelo nome) antes de transcrever manualmente.
+* Quando um domínio inteiro não tiver fonte oficial verificável no momento
+  da implementação, documentar isso onde o código cru é mantido (comentário
+  no `.sql` do model + linha em `ROADMAP_DBT.md`), em vez de deixar seed
+  incompleto sem explicação.
+
+---
+
 ## Estilo de Código Python
 
 * Funções devem ter entre 4 e 20 linhas sempre que possível.
