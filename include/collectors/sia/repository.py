@@ -1,15 +1,21 @@
 """Persistência da produção ambulatorial do SIA em raw_sia.producao_ambulatorial.
 
-Estratégia de idempotência: delete + insert por partição (competência +
-município), não upsert por chave natural. O SIA/PA não tem um identificador
-único por linha (é produção agregada por procedimento/CBO/paciente/
-competência); "delete + insert por partição" é uma das estratégias aceitas
-para esse formato (ver CLAUDE.md, seção Idempotência).
+Estratégia de idempotência: delete + insert por partição (competência),
+não upsert por chave natural. O SIA/PA não tem um identificador único por
+linha (é produção agregada por procedimento/CBO/paciente/competência);
+"delete + insert por partição" é uma das estratégias aceitas para esse
+formato (ver CLAUDE.md, seção Idempotência).
+
+A tabela cobre o estado (UF) inteiro, não só o município de referência do
+MVP — client.py já decodifica o arquivo inteiro antes de qualquer filtro
+ser possível, então persistir tudo reaproveita o trabalho de decode em vez
+de descartar ~38% das linhas já processadas (ver parser.py e ROADMAP.md).
+A partição de delete é só por competência, não por competência+município.
 
 Insere em lote via COPY (não INSERT/executemany): o volume de uma única
-competência para o município de referência já passa de milhões de linhas
-(medido: ~2,7 milhões em dez/2025), e o custo por round-trip do
-INSERT/executemany não escala para esse volume.
+competência do estado inteiro já passa de milhões de linhas (medido: ~4,7
+milhões em nov/2025), e o custo por round-trip do INSERT/executemany não
+escala para esse volume.
 """
 
 from __future__ import annotations
@@ -23,8 +29,8 @@ CREATE_SCHEMA_SQL = "CREATE SCHEMA IF NOT EXISTS raw_sia;"
 CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS raw_sia.producao_ambulatorial (
     codigo_cnes_estabelecimento TEXT NOT NULL,
-    -- Código IBGE de 6 dígitos sem dígito verificador (PA_UFMUN do SIA);
-    -- ver MUNICIPIO_REFERENCIA_CODUFMUN em parser.py.
+    -- Código IBGE de 6 dígitos sem dígito verificador (PA_UFMUN do SIA).
+    -- Cobre o estado (UF) inteiro, sem filtro de município — ver parser.py.
     cod_municipio_ibge6_estabelecimento TEXT NOT NULL,
     cod_municipio_ibge6_paciente TEXT NOT NULL,
     competencia TEXT NOT NULL,
@@ -48,8 +54,7 @@ CREATE TABLE IF NOT EXISTS raw_sia.producao_ambulatorial (
 
 DELETE_COMPETENCIA_SQL = """
 DELETE FROM raw_sia.producao_ambulatorial
-WHERE competencia = %(competencia)s
-  AND cod_municipio_ibge6_estabelecimento = %(municipio)s;
+WHERE competencia = %(competencia)s;
 """
 
 COLUNAS_INSERT = (
@@ -86,9 +91,8 @@ def ensure_schema(conn: psycopg.Connection) -> None:
 def substituir_producao_ambulatorial(
     conn: psycopg.Connection,
     producoes: list[dict],
-    municipio: str,
 ) -> int:
-    """Substitui as partições (competência real + município) presentes no lote.
+    """Substitui as partições (competência real) presentes no lote.
 
     A partição apagada/substituída é a competência de cada linha
     (`producao["competencia"]`, vindo de PA_CMP), não o mês do arquivo
@@ -102,10 +106,7 @@ def substituir_producao_ambulatorial(
 
     with conn.cursor() as cur:
         for competencia in competencias:
-            cur.execute(
-                DELETE_COMPETENCIA_SQL,
-                {"competencia": competencia, "municipio": municipio},
-            )
+            cur.execute(DELETE_COMPETENCIA_SQL, {"competencia": competencia})
 
         with cur.copy(
             f"COPY raw_sia.producao_ambulatorial ({', '.join(COLUNAS_INSERT)}) FROM STDIN"

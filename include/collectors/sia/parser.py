@@ -21,14 +21,6 @@ REQUIRED_FIELDS = (
     "_arquivo_origem",
 )
 
-# Rio de Janeiro: id_municipio 3304557 em raw_ibge.municipios. O SIA usa
-# PA_UFMUN, o mesmo código IBGE de 6 dígitos sem dígito verificador do CNES
-# (include/collectors/cnes/parser.py). Escopo MVP restringe a este município
-# (docs/fontes.md#escopo-de-volume-para-o-mvp). O filtro acontece aqui, não
-# no client, porque o arquivo do SIA é distribuído por UF inteira, sem
-# recorte por município.
-MUNICIPIO_REFERENCIA_CODUFMUN = "330455"
-
 
 def parse_producao_ambulatorial(raw: dict) -> dict:
     """Normaliza um registro bruto de produção ambulatorial do SIA/PA.
@@ -71,10 +63,14 @@ def parse_producao_ambulatorial(raw: dict) -> dict:
 
 
 def parse_producoes_ambulatoriais(raw_producoes: list[dict]) -> list[dict]:
-    """Filtra pelo município de referência do MVP e normaliza cada registro."""
-    do_municipio = [
-        raw
-        for raw in raw_producoes
-        if raw.get("PA_UFMUN") == MUNICIPIO_REFERENCIA_CODUFMUN
-    ]
-    return [parse_producao_ambulatorial(raw) for raw in do_municipio]
+    """Normaliza cada registro bruto, sem filtro por município.
+
+    O SIA não filtra mais por município de referência: o raw cobre o
+    estado (UF) inteiro, não só o Rio de Janeiro. Motivo: `client.py` já
+    decodifica o arquivo inteiro (`to_dict`) antes de qualquer filtro ser
+    possível — o custo de CPU do decode é pago independente do recorte, e
+    descartar ~38% das linhas já decodificadas sem persistir jogava fora
+    trabalho que poderia ser reaproveitado para outros municípios do
+    estado no futuro. Ver ROADMAP.md e docs/fontes.md#escopo-de-volume-para-o-mvp.
+    """
+    return [parse_producao_ambulatorial(raw) for raw in raw_producoes]

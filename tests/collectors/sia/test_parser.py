@@ -1,15 +1,14 @@
 import pytest
 
 from include.collectors.sia.parser import (
-    MUNICIPIO_REFERENCIA_CODUFMUN,
     parse_producao_ambulatorial,
     parse_producoes_ambulatoriais,
 )
 
 RAW_PRODUCAO = {
     "PA_CODUNI": "6631169",
-    "PA_UFMUN": MUNICIPIO_REFERENCIA_CODUFMUN,
-    "PA_MUNPCN": MUNICIPIO_REFERENCIA_CODUFMUN,
+    "PA_UFMUN": "330455",
+    "PA_MUNPCN": "330455",
     "PA_CMP": "202512",
     "PA_PROC_ID": "0301100012",
     "PA_CBOCOD": "223505",
@@ -31,8 +30,8 @@ def test_parse_producao_ambulatorial_normaliza_campos():
 
     assert resultado == {
         "codigo_cnes_estabelecimento": "6631169",
-        "cod_municipio_ibge6_estabelecimento": MUNICIPIO_REFERENCIA_CODUFMUN,
-        "cod_municipio_ibge6_paciente": MUNICIPIO_REFERENCIA_CODUFMUN,
+        "cod_municipio_ibge6_estabelecimento": "330455",
+        "cod_municipio_ibge6_paciente": "330455",
         "competencia": "202512",
         "codigo_procedimento": "0301100012",
         "codigo_cbo": "223505",
@@ -59,19 +58,19 @@ def test_parse_producao_ambulatorial_rejeita_registro_sem_campo_obrigatorio(
         parse_producao_ambulatorial(raw_incompleto)
 
 
-def test_parse_producoes_ambulatoriais_filtra_pelo_municipio_de_referencia():
+def test_parse_producoes_ambulatoriais_processa_o_estado_inteiro_sem_filtrar():
     outro_municipio = {**RAW_PRODUCAO, "PA_UFMUN": "330010"}
 
     resultado = parse_producoes_ambulatoriais([RAW_PRODUCAO, outro_municipio])
 
-    assert len(resultado) == 1
-    assert (
-        resultado[0]["cod_municipio_ibge6_estabelecimento"]
-        == MUNICIPIO_REFERENCIA_CODUFMUN
-    )
+    assert len(resultado) == 2
+    assert {r["cod_municipio_ibge6_estabelecimento"] for r in resultado} == {
+        "330455",
+        "330010",
+    }
 
 
-def test_parse_producoes_ambulatoriais_processa_lista_completa_do_municipio():
+def test_parse_producoes_ambulatoriais_processa_lista_completa():
     resultado = parse_producoes_ambulatoriais([RAW_PRODUCAO, RAW_PRODUCAO])
 
     assert len(resultado) == 2
