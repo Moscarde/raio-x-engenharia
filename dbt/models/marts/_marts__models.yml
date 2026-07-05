@@ -64,6 +64,32 @@ models:
                 to: ref('dim_municipio')
                 field: id_municipio
 
+  - name: fct_producao_ambulatorial
+    description: >
+      Produção ambulatorial do SIA (2025, ano completo, estado do RJ
+      inteiro). Materializado incremental por competencia_arquivo (ver
+      comentário no .sql) — não table full-refresh, dado o volume
+      (99.9M+ linhas).
+    columns:
+      - name: competencia_arquivo
+        data_tests:
+          - not_null
+      - name: id_municipio_estabelecimento
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+      - name: codigo_cnes_estabelecimento
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_estabelecimento')
+                field: codigo_cnes
+              config:
+                severity: warn
+
   - name: mart_repasses_fns
     description: Lançamentos de Fundo a Fundo do FNS (2025), com município resolvido.
     columns:

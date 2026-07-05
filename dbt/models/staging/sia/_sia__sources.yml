@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  - name: raw_sia
+    schema: raw_sia
+    description: >
+      Produção ambulatorial do SIA, carregada por include/collectors/sia.
+      Cobre o estado (UF) inteiro, não só o município de referência (ver
+      ROADMAP.md e docs/fontes.md#escopo-de-volume-para-o-mvp).
+    tables:
+      - name: producao_ambulatorial
+        description: >
+          1 linha por procedimento produzido (2025, 12 competências, RJ
+          inteiro — 99.927.543 linhas). Sem chave natural de linha; a fonte
+          é produção agregada por procedimento/CBO/paciente/competência.
+        columns:
+          - name: competencia_arquivo
+            description: >
+              Competência do arquivo buscado (ano/mês do fetch, não a
+              competência real da linha). Chave de partição do delete+insert
+              em raw_sia e do incremental em stg/fct.
+            data_tests:
+              - not_null

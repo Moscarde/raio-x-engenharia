@@ -150,8 +150,40 @@ cobertura.
 4. ✅ `stg_sih__internacoes` + `fct_internacoes`.
 5. ⬜ `stg_sia__producao_ambulatorial` + `fct_producao_ambulatorial` —
    carga completa 2025 do SIA já terminou (99.927.543 linhas, RJ inteiro);
-   falta só implementar o model. Considerar incremental por competência
-   dado o volume.
+   model e schema.yml já escritos (incremental por `competencia_arquivo`,
+   `delete+insert`), mas nunca terminou de rodar. **Handoff 2026-07-05:**
+   desenvolvimento migrado pra outra máquina; o que falta refazer/verificar
+   lá antes de seguir:
+   - Build travou 2x na primeira materialização: o model lê os 99.9M+
+     registros inteiros numa única transação (sem filtro de bootstrap),
+     gerou WAL suficiente pra encher o disco raiz da máquina antiga (108GB,
+     chegou a 27MB livres) e o processo `dbt run` morreu sem log de erro.
+     Não tentar `dbt run` direto na tabela inteira sem checar espaço em
+     disco livre antes (regra de bolso: raw da fonte × ~1.5-2 pra WAL/heap
+     da tabela nova).
+   - Estratégia recomendada (não implementada ainda): popular a tabela em
+     chunks por `competencia_arquivo` — dá log de progresso natural (1
+     linha por competência) em vez de esperar 2h+ no escuro sem saber se
+     travou. Precisa de 2 coisas antes de funcionar bem:
+     1. Índice em `raw_sia.producao_ambulatorial(competencia_arquivo)` —
+        sem ele, cada chunk faz full scan nos 99.9M registros (pior que
+        1 leitura só).
+     2. Confirmar se `_loaded_at` varia por competência ou é o mesmo
+        timestamp pro batch inteiro (não confirmado — query de
+        `group by competencia_arquivo, min/max(_loaded_at)` nunca
+        terminou). Se for o mesmo timestamp pra tudo, o filtro
+        `is_incremental()` atual (`_loaded_at > max(_loaded_at)`) não
+        pega os chunks seguintes sozinho — precisa de uma var de bootstrap
+        temporária (ex. `var('bootstrap_competencia')`, ativa só quando
+        `not is_incremental()`) pra popular 1 competência por vez.
+   - `dbt test` em `stg_sia__producao_ambulatorial` e
+     `fct_producao_ambulatorial` nunca rodou (bloqueado pelo build).
+   - Row count e timing reais de `fct_producao_ambulatorial` ainda não
+     confirmados nesta tabela do roadmap — atualizar quando o build
+     terminar.
+   - Sobraram 2 arquivos de scratch soltos na raiz do repo de uma sessão
+     anterior (`​.scratch_date.txt`, `.scratch_pgstat.txt`, ambos vazios) —
+     não fazem parte do projeto, podem ser apagados.
 6. ✅ `stg_sim__obitos` + `fct_obitos`, `stg_sinasc__nascidos_vivos` +
    `fct_nascidos_vivos`.
 7. ✅ `stg_fns__repasses` + `stg_siops__rreo_anexo14` +

@@ -1,0 +1,9 @@
+version: 2
+
+models:
+  - name: stg_sia__producao_ambulatorial
+    description: Produção ambulatorial do SIA, tipada.
+    columns:
+      - name: competencia_arquivo
+        data_tests:
+          - not_null
