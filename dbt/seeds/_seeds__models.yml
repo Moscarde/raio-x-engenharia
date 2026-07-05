@@ -24,6 +24,39 @@ seeds:
         data_tests:
           - not_null
 
+  - name: seed_cnes_tipo_unidade
+    description: >
+      De-para do código TP_UNID (tipo_unidade) do CNES para descrição
+      legível. Fonte: "CNES - Tabela de Tipo de Estabelecimento"
+      (https://jundiai.sp.gov.br/saude/wp-content/uploads/sites/17/2014/09/Tabela-de-Tipos-e-Subtipos-de-Estabelecimento-SCNES.pdf,
+      reprodução municipal da tabela oficial do CNES/DATASUS, cada código
+      citando a Portaria federal que o instituiu — ex. PT SAS 511 de
+      29/12/2000, Portaria 198 de 28/03/2008), consultada em 2026-07-05 via
+      `pdftotext`. Como o texto extraído por `pdftotext` divergia entre os
+      modos `-layout` e `-raw` para os códigos 67/68 (ordem de leitura
+      ambígua no stream do PDF), a tabela foi renderizada em imagem
+      (`pdftoppm`) e conferida visualmente célula a célula antes de
+      transcrever — não só grep pelo código, mas inspeção do layout real.
+      Cobertura: 24 dos 33 códigos distintos observados em
+      raw_cnes.estabelecimentos (Rio de Janeiro, Paraty, Nova Iguaçu,
+      competência 2025-12) foram confirmados contra a tabela (mais 6 códigos
+      da tabela não observados no dado atual, incluídos por completude: 01,
+      32, 64, 67, 71, 74). Os códigos 16, 77, 79, 80, 81, 82, 83, 84 e 85 —
+      típicos de portarias posteriores a 2011, fora do escopo do documento
+      consultado — não foram encontrados em nenhuma fonte oficial
+      verificável e ficam de fora do seed de propósito: o join em
+      stg_cnes__estabelecimentos retorna NULL para eles em vez de um rótulo
+      não verificado. Ver regra geral em
+      CLAUDE.md#seeds-e-dicionários-externos-de-para.
+    columns:
+      - name: codigo_tipo_unidade
+        data_tests:
+          - unique
+          - not_null
+      - name: descricao_tipo_unidade
+        data_tests:
+          - not_null
+
   - name: seed_sisab_tipo_indicador
     description: >
       De-para do codigo_tipo_indicador (10/20/30/40/50/60/70) da API DEMAS

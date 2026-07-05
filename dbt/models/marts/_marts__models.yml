@@ -18,6 +18,20 @@ models:
         data_tests:
           - unique
           - not_null
+      - name: id_municipio
+        description: >
+          Código IBGE de 7 dígitos, via bridge int_ibge__municipio_codigo6
+          (mesmo padrão de fct_internacoes/fct_obitos/fct_nascidos_vivos).
+          raw_ibge.municipios cobre o Brasil inteiro, então — ao contrário
+          do relationships de codigo_cnes_estabelecimento pro snapshot do
+          CNES — não há razão esperada para o join falhar; teste sem
+          severity: warn.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
 
   - name: fct_internacoes
     description: Internações hospitalares do SIH (2025, ano completo).

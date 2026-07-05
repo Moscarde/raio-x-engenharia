@@ -1,0 +1,31 @@
+codigo_tipo_unidade,descricao_tipo_unidade
+01,Posto de Saúde
+02,Centro de Saúde/Unidade Básica de Saúde
+04,Policlínica
+05,Hospital Geral
+07,Hospital Especializado
+15,Unidade Mista
+20,Pronto Socorro Geral
+21,Pronto Socorro Especializado
+22,Consultório Isolado
+32,Unidade Móvel Fluvial
+36,Clínica Especializada/Ambulatório Especializado
+39,Unidade de Serviço de Apoio de Diagnose e Terapia
+40,Unidade Móvel Terrestre
+42,Unidade Móvel de Nível Pré-Hospitalar na Área de Urgência
+43,Farmácia
+50,Unidade de Vigilância em Saúde
+60,Cooperativa
+61,Centro de Parto Normal Isolado
+62,Hospital/Dia Isolado
+64,Central de Regulação de Serviços de Saúde
+67,Laboratório Central de Saúde Pública - LACEN
+68,Secretaria de Saúde
+69,Centro de Atenção Hemoterápica e ou Hematológica
+70,Centro de Atenção Psicossocial
+71,Centro de Apoio à Saúde da Família
+72,Unidade de Atenção à Saúde Indígena
+73,Pronto Atendimento
+74,Polo Academia da Saúde
+75,Telessaúde
+76,Central de Regulação Médica de Urgências

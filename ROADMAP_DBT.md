@@ -22,10 +22,12 @@ em [CLAUDE.md](CLAUDE.md#convenções-de-nomeação-dbt).
   concluída em 2026-07-05 na máquina nova (ver "Handoff resolvido" abaixo).
 
 Rodado de ponta a ponta (`dbt seed && dbt run && dbt test`):
-**19 models, 3 seeds, 71 testes — 70 PASS + 1 WARN esperado (relationship
+**19 models, 4 seeds, 76 testes — 75 PASS + 1 WARN esperado (relationship
 `fct_producao_ambulatorial` → `dim_estabelecimento`, mesma razão do WARN já
 existente em `fct_internacoes`: o CNES é um snapshot único de dez/2025, não
-cobre todo `codigo_cnes` referenciado no ano inteiro do SIA).
+cobre todo `codigo_cnes` referenciado no ano inteiro do SIA). Contagem
+inclui os ajustes de 2026-07-05 (`dim_estabelecimento.id_municipio` +
+`seed_cnes_tipo_unidade`, ver notas abaixo).
 
 ## Ajustes de design feitos durante a implementação
 
@@ -50,6 +52,23 @@ ainda reflete o que foi construído.
   (não dá pra somar R$ com %). Ficaram `mart_repasses_fns` e
   `mart_financiamento_saude_siops`, cada um fiel à granularidade real da
   própria fonte.
+- **`dim_estabelecimento` ganhou `id_municipio` em 2026-07-05.** O plano
+  original adiava essa resolução pra "quando o primeiro fato precisar
+  disso" (comentário no `.sql` antigo). Esse momento chegou de fora do
+  dbt: o consumidor Evidence (`raio-x-dash-evidence-dev`), ao implementar
+  o seletor de município em `pages/perfil-municipal.md`, precisou cruzar
+  estabelecimentos por município e — na ausência do `id_municipio` na
+  mart — replicou o `left(m.id_municipio::text, 6) = e.cod_municipio_ibge6`
+  direto na página, duplicando lógica que já existia em
+  `int_ibge__municipio_codigo6`. Resolvido aplicando o mesmo bridge já
+  usado pelos fatos, sem inventar padrão novo: `dim_estabelecimento` agora
+  expõe `id_municipio` (7 dígitos) e mantém `cod_municipio_ibge6` (6
+  dígitos) para quem já dependia dele. Teste `not_null` + `relationships`
+  contra `dim_municipio` sem `severity: warn` — diferente do warn em
+  `codigo_cnes_estabelecimento` (que depende do snapshot mensal do CNES
+  cobrir todo `codigo_cnes` referenciado em um ano inteiro de eventos),
+  aqui o de-para é só truncamento de código contra `raw_ibge.municipios`
+  (cobertura nacional), sem motivo esperado para falhar.
 
 ## Tabelas raw disponíveis
 
@@ -70,7 +89,7 @@ ainda reflete o que foi construído.
 | Model | Fonte | O que foi feito |
 | --- | --- | --- |
 | `stg_ibge__municipios` | `raw_ibge.municipios` | ✅ Já vem tipado; passthrough. |
-| `stg_cnes__estabelecimentos` | `raw_cnes.estabelecimentos` | ✅ `competencia` → DATE; `tipo_pessoa`, `nivel_dependencia`, `atividade_ensino`, `tipo_gestao`, `vinculo_sus` decodificados inline (verificados contra dado real, `accepted_values` passando); `natureza_juridica` via seed (22/25 códigos); `tipo_unidade` e `esfera_administrativa` ficam crus (ver seção de seeds e o comentário no `.sql`). |
+| `stg_cnes__estabelecimentos` | `raw_cnes.estabelecimentos` | ✅ `competencia` → DATE; `tipo_pessoa`, `nivel_dependencia`, `atividade_ensino`, `tipo_gestao`, `vinculo_sus` decodificados inline (verificados contra dado real, `accepted_values` passando); `natureza_juridica` via seed (22/25 códigos); `tipo_unidade` via seed desde 2026-07-05 (24/33 códigos, ver seção de seeds); `esfera_administrativa` fica cru (ver comentário no `.sql`). |
 | `stg_sih__internacoes` | `raw_sih.internacoes` | ✅ `data_internacao`/`data_saida` (TEXT `AAAAMMDD`) → DATE; `dias_permanencia`/`valor_total` → INT/NUMERIC; `indicador_obito` → `houve_obito` BOOLEAN. |
 | `stg_sim__obitos` | `raw_sim.obitos` | ✅ `data_obito`/`data_nascimento` (TEXT `DDMMAAAA`, confirmado — não `AAAAMMDD`) → DATE; `idade` decodificada em `idade_unidade` + `idade_valor` (código composto do SIM: 1º dígito = unidade; sentinelas "000" e "999" = idade não informada, confirmado contra dado real — 167 óbitos com "999"). |
 | `stg_sinasc__nascidos_vivos` | `raw_sinasc.nascidos_vivos` | ✅ `data_nascimento` → DATE; `peso_gramas`, `numero_consultas_prenatal`, `idade_mae` → INT; `apgar1`/`apgar5` → INT com `nullif('')` (359/307 linhas vêm vazias — não medido, confirmado contra dado real, não é falha do collector). |
@@ -97,9 +116,25 @@ cobertura.
 - ✅ `seed_fns_ente_municipio.csv` — fonte: API Fundo a Fundo do FNS,
   confirmada contra a própria API em 2026-07-04 (Rio de Janeiro) e
   2026-07-05 (Paraty, Nova Iguaçu). 3 de 3 (todos os entes no MVP).
-- ⬜ `seed_cnes_tipo_unidade.csv` — pendente. 31 códigos distintos na
-  competência 2025-12; nenhuma fonte oficial machine-readable encontrada
-  ainda. `tipo_unidade` fica cru em `stg_cnes__estabelecimentos`.
+- ✅ `seed_cnes_tipo_unidade.csv` — fonte: "CNES - Tabela de Tipo de
+  Estabelecimento" (reprodução municipal — Jundiaí/SP — da tabela oficial
+  do CNES/DATASUS, cada código citando a Portaria federal que o instituiu),
+  consultada em 2026-07-05 via `pdftotext`. A extração de texto divergiu
+  entre os modos `-layout` e `-raw` pros códigos 67/68 (ordem de leitura
+  ambígua no stream do PDF) — resolvido renderizando a página em imagem
+  (`pdftoppm`) e conferindo célula a célula visualmente antes de
+  transcrever, não só grep pelo código. Cobertura: 24 dos 33 códigos
+  distintos observados em raw_cnes.estabelecimentos (Rio de Janeiro,
+  Paraty, Nova Iguaçu) confirmados contra a tabela, mais 6 códigos da
+  tabela não observados no dado atual incluídos por completude (01, 32,
+  64, 67, 71, 74). Os códigos 16, 77, 79, 80, 81, 82, 83, 84 e 85 — de
+  portarias posteriores a 2011, fora do escopo do documento consultado —
+  não têm fonte verificável encontrada e ficam de fora do seed (214 linhas
+  de `dim_estabelecimento`, confirmado); join retorna `NULL` pra eles, de
+  propósito. `tipo_unidade` em `stg_cnes__estabelecimentos` virou
+  `codigo_tipo_unidade` + `descricao_tipo_unidade` (mesmo padrão de
+  `natureza_juridica`). `esfera_administrativa` continua crua (fora de
+  escopo desta etapa).
 - CID-10 (causa_basica do SIM) e CBO (códigos de ocupação do SIA/SIH)
   ficam de fora do MVP — tabelas grandes (milhares de códigos), etapa
   futura se um mart precisar do nome legível.
@@ -108,14 +143,14 @@ cobertura.
 
 | Model | Status | O que faz |
 | --- | --- | --- |
-| `int_ibge__municipio_codigo6` | ✅ Implementado | Bridge `id_municipio` (7 dígitos) ↔ `cod_municipio_ibge6` (6 dígitos, `left(id_municipio::text, 6)`). Reaproveitado por `fct_internacoes`, `fct_obitos`, `fct_nascidos_vivos`, `mart_indicadores_aps` e `fct_producao_ambulatorial`. |
+| `int_ibge__municipio_codigo6` | ✅ Implementado | Bridge `id_municipio` (7 dígitos) ↔ `cod_municipio_ibge6` (6 dígitos, `left(id_municipio::text, 6)`). Reaproveitado por `fct_internacoes`, `fct_obitos`, `fct_nascidos_vivos`, `mart_indicadores_aps`, `fct_producao_ambulatorial` e (desde 2026-07-05) `dim_estabelecimento`. |
 
 ## Camada marts
 
 | Model | Tipo | Grão | Status |
 | --- | --- | --- | --- |
 | `dim_municipio` | dim | 1 por município | ✅ |
-| `dim_estabelecimento` | dim | 1 por `codigo_cnes` | ✅ |
+| `dim_estabelecimento` | dim | 1 por `codigo_cnes` | ✅ (`id_municipio` via bridge desde 2026-07-05, ver nota abaixo) |
 | `fct_internacoes` | fct | 1 por AIH | ✅ |
 | `fct_obitos` | fct | 1 por óbito | ✅ |
 | `fct_nascidos_vivos` | fct | 1 por nascimento | ✅ |
@@ -124,7 +159,7 @@ cobertura.
 | `mart_indicadores_aps` | mart | 1 por indicador/visão de equipe | ✅ |
 | `fct_producao_ambulatorial` | fct | 1 por procedimento produzido | ✅ |
 
-## Testes dbt (71 rodando)
+## Testes dbt (76 rodando)
 
 - `unique` + `not_null` na chave de grão de cada fct/dim/seed.
 - `relationships` de cada fct/mart para `dim_municipio` (e

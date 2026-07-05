@@ -10,6 +10,12 @@ natureza_juridica as (
 
 ),
 
+tipo_unidade as (
+
+    select * from {{ ref('seed_cnes_tipo_unidade') }}
+
+),
+
 estabelecimentos_tipados as (
 
     select
@@ -26,10 +32,8 @@ estabelecimentos_tipados as (
             when '3' then 'mantida'
         end as nivel_dependencia,
 
-        -- tipo_unidade: código bruto do CNES (TP_UNID). De-para pendente —
-        -- não encontrada fonte oficial verificável pro domínio completo
-        -- (31 códigos distintos nesta competência); ver ROADMAP_DBT.md.
-        e.tipo_unidade,
+        e.tipo_unidade as codigo_tipo_unidade,
+        tu.descricao_tipo_unidade,
 
         -- Sempre vazio nesta competência (confirmado direto no DBC via
         -- pysus, não é bug do collector) — ver docs/COLLECTOR_TEMPLATE.md.
@@ -79,6 +83,8 @@ estabelecimentos_tipados as (
     from estabelecimentos e
     left join natureza_juridica nj
         on e.natureza_juridica = nj.codigo_natureza_juridica
+    left join tipo_unidade tu
+        on e.tipo_unidade = tu.codigo_tipo_unidade
 
 )
 

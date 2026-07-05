@@ -23,6 +23,7 @@ seeds:
     +column_types:
       codigo_natureza_juridica: text
       cnpj_ente: text
+      codigo_tipo_unidade: text
 
 # Camadas seguem CLAUDE.md (Convenções de Nomeação dbt): staging tipa e
 # aplica de-para; intermediate só existe onde mais de uma mart reaproveita

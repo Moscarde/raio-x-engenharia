@@ -2,26 +2,36 @@ with estabelecimentos as (
 
     select * from {{ ref('stg_cnes__estabelecimentos') }}
 
+),
+
+municipios as (
+
+    select * from {{ ref('int_ibge__municipio_codigo6') }}
+
 )
 
 select
-    codigo_cnes,
-    -- Código IBGE de 6 dígitos sem dígito verificador (mesmo padrão de
-    -- SIA/SIH/SIM/SINASC). Resolver pra dim_municipio.id_municipio (7
-    -- dígitos) fica pra int_saude__eventos_com_municipio, quando o
-    -- primeiro fato que precisar disso for implementado (ver
-    -- ROADMAP_DBT.md) — não antes.
-    cod_municipio_ibge6,
-    tipo_pessoa,
-    nivel_dependencia,
-    tipo_unidade,
-    natureza_organizacao,
-    codigo_natureza_juridica,
-    descricao_natureza_juridica,
-    atividade_ensino,
-    tem_vinculo_sus,
-    tipo_gestao,
-    esfera_administrativa,
-    competencia_date as competencia_cadastro
+    e.codigo_cnes,
+    -- id_municipio (7 dígitos) via bridge int_ibge__municipio_codigo6 —
+    -- mesmo padrão já usado por fct_internacoes, fct_obitos,
+    -- fct_nascidos_vivos, mart_indicadores_aps e
+    -- fct_producao_ambulatorial (ver ROADMAP_DBT.md). cod_municipio_ibge6
+    -- (6 dígitos) mantido também, para consumidores que já dependem dele.
+    mun.id_municipio,
+    e.cod_municipio_ibge6,
+    e.tipo_pessoa,
+    e.nivel_dependencia,
+    e.codigo_tipo_unidade,
+    e.descricao_tipo_unidade,
+    e.natureza_organizacao,
+    e.codigo_natureza_juridica,
+    e.descricao_natureza_juridica,
+    e.atividade_ensino,
+    e.tem_vinculo_sus,
+    e.tipo_gestao,
+    e.esfera_administrativa,
+    e.competencia_date as competencia_cadastro
 
-from estabelecimentos
+from estabelecimentos e
+left join municipios mun
+    on e.cod_municipio_ibge6 = mun.cod_municipio_ibge6
