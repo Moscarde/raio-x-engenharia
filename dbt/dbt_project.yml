@@ -13,6 +13,16 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
+# Sem isso, dbt infere o tipo da coluna pelo CSV: como os códigos de
+# de-para (ex.: seed_cnes_natureza_juridica) são só dígitos, viraria
+# INTEGER e perderia zero à esquerda em domínios futuros — força TEXT em
+# toda coluna "codigo_*" dos seeds.
+seeds:
+  raio_x_saude:
+    +schema: staging
+    +column_types:
+      codigo_natureza_juridica: text
+
 # Camadas seguem CLAUDE.md (Convenções de Nomeação dbt): staging tipa e
 # aplica de-para; intermediate só existe onde mais de uma mart reaproveita
 # a mesma junção; marts materializa tabela (consumida por BI/portfólio).

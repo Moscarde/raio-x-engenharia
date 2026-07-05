@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: stg_cnes__estabelecimentos
+    description: Estabelecimentos do CNES, tipados e com de-para de códigos aplicado.
+    columns:
+      - name: codigo_cnes
+        description: Código CNES do estabelecimento. Chave do model.
+        data_tests:
+          - unique
+          - not_null
+      - name: tipo_pessoa
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["fisica", "juridica"]
+      - name: nivel_dependencia
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["individual", "mantida"]
+      - name: atividade_ensino
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - unidade_universitaria
+                  - unidade_escola_superior_isolada
+                  - unidade_auxiliar_de_ensino
+                  - sem_atividade_de_ensino
+                  - hospital_de_ensino
+                  - nao_informado
+      - name: tipo_gestao
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [municipal, estadual, dupla, sem_gestao, nao_informado]

@@ -2,8 +2,19 @@
 
 Planejamento da camada de transformação (`dbt/`) sobre as 9 tabelas raw já
 carregadas (ver [ROADMAP.md](ROADMAP.md)). Convenções de nomeação e schemas
-em [CLAUDE.md](CLAUDE.md#convenções-de-nomeação-dbt). Este arquivo é
-planejamento — nenhum model foi criado ainda.
+em [CLAUDE.md](CLAUDE.md#convenções-de-nomeação-dbt).
+
+## Status
+
+- ✅ Etapa 1 — scaffold (`dbt_project.yml`, `profiles.yml`, macro de schema
+  exato) + `stg_ibge__municipios` + `dim_municipio`. `dbt run`/`dbt test`
+  rodados de ponta a ponta (5.571 municípios, 8 testes ok).
+- ✅ Etapa 2 — `stg_cnes__estabelecimentos` + `dim_estabelecimento` +
+  `seed_cnes_natureza_juridica` (22/25 códigos verificados contra a
+  Receita Federal, ver seção de seeds abaixo). Rodado de ponta a ponta
+  (17.380 estabelecimentos, 21 testes ok, incluindo `accepted_values` dos
+  5 campos decodificados inline).
+- ⬜ Etapas 3-8 — planejadas, não iniciadas.
 
 ## Tabelas raw disponíveis (ponto de partida)
 
@@ -28,8 +39,8 @@ em `docs/COLLECTOR_TEMPLATE.md`). Sem regra de negócio nem agregação.
 
 | Model | Fonte | Observação de tipagem/de-para |
 | --- | --- | --- |
-| `stg_ibge__municipios` | `raw_ibge.municipios` | Já vem tipado (INTEGER/TEXT); staging é praticamente passthrough. |
-| `stg_cnes__estabelecimentos` | `raw_cnes.estabelecimentos` | CAST de `competencia`/`data_atualizacao` (TEXT `AAAAMM`) para tipo de período; de-para de `tipo_unidade`, `natureza_juridica`, `natureza_organizacao` (hoje só código DATASUS) — precisa de seed. |
+| `stg_ibge__municipios` | `raw_ibge.municipios` | ✅ Implementado. Já vem tipado (INTEGER/TEXT); staging é praticamente passthrough. |
+| `stg_cnes__estabelecimentos` | `raw_cnes.estabelecimentos` | ✅ Implementado. `competencia` → DATE (`to_date(..., 'YYYYMM')`); `tipo_pessoa`, `nivel_dependencia`, `atividade_ensino`, `tipo_gestao`, `vinculo_sus` decodificados inline (domínios pequenos, verificados contra dado real — ver `accepted_values` no model); `natureza_juridica` decodificado via seed (22/25 códigos); `tipo_unidade` (31 códigos) e `esfera_administrativa` ficam crus — sem fonte oficial verificável encontrada pro 1º, e o 2º tem valor real (M/E) que diverge do domínio oficial descrito (01-04/99), documentado no `.sql`. |
 | `stg_sia__producao_ambulatorial` | `raw_sia.producao_ambulatorial` | CAST de `idade_paciente`, `quantidade_*`, `valor_*` (TEXT → NUMERIC/INT); `competencia` (TEXT `AAAAMM`) → DATE do 1º dia do mês. |
 | `stg_sih__internacoes` | `raw_sih.internacoes` | CAST de `data_internacao`/`data_saida` (TEXT `AAAAMMDD`) → DATE; `dias_permanencia`/`valor_total` → INT/NUMERIC; `indicador_obito` → BOOLEAN. |
 | `stg_sim__obitos` | `raw_sim.obitos` | CAST de `data_obito`/`data_nascimento` (TEXT `DDMMAAAA`, não `AAAAMMDD` — confirmar formato real) → DATE; **`idade`** usa o formato DATASUS de 3 dígitos (1º dígito = unidade: 0=minutos...5=anos; decodificar aqui, não deixar pra mart). |
@@ -38,13 +49,23 @@ em `docs/COLLECTOR_TEMPLATE.md`). Sem regra de negócio nem agregação.
 | `stg_siops__rreo_anexo14` | `raw_siops.rreo_anexo14` | Já vem tipado (NUMERIC) — passthrough. Formato é "long" (1 linha por conta); considerar pivot só na mart, não aqui. |
 | `stg_sisab__indicador_desempenho` | `raw_sisab.indicador_desempenho` | Já vem tipado — passthrough; de-para de `codigo_tipo_indicador` (10/20/30/40/50/70) para o nome do indicador Previne Brasil precisa de seed (não está na API). |
 
-## Seeds necessários (de-para)
+## Seeds (de-para)
 
-Nenhum ainda existe em `dbt/seeds/`. Necessários para não deixar código
-DATASUS cru na camada staging:
+Regra de documentação de proveniência em
+[CLAUDE.md#seeds-e-dicionários-externos-de-para](CLAUDE.md). Todo seed tem
+entrada em `dbt/seeds/_seeds__models.yml` com fonte, data de consulta e
+cobertura.
 
-- `seed_cnes_tipo_unidade.csv`, `seed_cnes_natureza_juridica.csv` — de-para de código → descrição (fonte: tabelas de domínio públicas do CNES).
-- `seed_sisab_tipo_indicador.csv` — de-para `codigo_tipo_indicador` → nome do indicador Previne Brasil (fonte: `Nota_tecnica_*_indicador_*.pdf` já linkados no dataset do DEMAS, ver ROADMAP.md).
+- ✅ `seed_cnes_natureza_juridica.csv` — fonte: Receita Federal, Tabela II
+  (consultada 2026-07-04). 22 dos 25 códigos reais confirmados; 4000,
+  2305, 2313 (~28% das linhas) ficam de fora, sem fonte verificável
+  encontrada — join retorna `NULL` pra eles, de propósito.
+- ⬜ `seed_cnes_tipo_unidade.csv` — pendente. 31 códigos distintos na
+  competência 2025-12; nenhuma fonte oficial machine-readable encontrada
+  ainda (páginas encontradas nas buscas eram parciais ou não
+  estruturadas). `tipo_unidade` fica cru em `stg_cnes__estabelecimentos`
+  até isso ser resolvido.
+- ⬜ `seed_sisab_tipo_indicador.csv` — pendente. De-para `codigo_tipo_indicador` → nome do indicador Previne Brasil (fonte candidata: `Nota_tecnica_*_indicador_*.pdf`, já linkados no dataset do DEMAS, ver ROADMAP.md — são PDFs, exigem extração manual do texto, não um CSV pronto).
 - CID-10 (causa_basica do SIM) e CBO (códigos de ocupação do SIA/SIH) ficam de fora do MVP inicial — tabelas grandes (milhares de códigos), tratar como etapa futura se um mart precisar do nome legível.
 
 ## Camada intermediate (`int_<domínio>__<algo>`)

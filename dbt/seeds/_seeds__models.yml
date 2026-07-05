@@ -1,0 +1,25 @@
+version: 2
+
+seeds:
+  - name: seed_cnes_natureza_juridica
+    description: >
+      De-para do código NAT_JUR (natureza_juridica) do CNES para descrição
+      legível. Fonte: Receita Federal, "Tabela II - Natureza Jurídica e
+      Qualificação do Responsável"
+      (https://www38.receita.fazenda.gov.br/cadsincnac/jsp/coleta/ajuda/topicos/Tabela_II_-_Natureza_Juridica_e_Qualificacao_do_Responsavel.htm),
+      consultada em 2026-07-04. Cobertura: 22 dos 25 códigos distintos
+      observados em raw_cnes.estabelecimentos (Rio de Janeiro, competência
+      2025-12) foram confirmados contra a tabela. Os códigos 4000, 2305 e
+      2313 (juntos, ~28% das linhas — 4000 sozinho é o 2º código mais
+      frequente) não foram encontrados na tabela consultada e ficam de
+      fora do seed de propósito: o join em stg_cnes__estabelecimentos
+      retorna NULL para eles em vez de um rótulo não verificado. Ver regra
+      geral em CLAUDE.md#seeds-e-dicionários-externos-de-para.
+    columns:
+      - name: codigo_natureza_juridica
+        data_tests:
+          - unique
+          - not_null
+      - name: descricao_natureza_juridica
+        data_tests:
+          - not_null

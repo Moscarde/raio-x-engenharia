@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw_cnes
+    schema: raw_cnes
+    description: Estabelecimentos de saúde do CNES, carregados por include/collectors/cnes.
+    tables:
+      - name: estabelecimentos
+        description: 1 linha por estabelecimento (grupo ST, competência 2025-12 — cadastro é snapshot, 1 competência já retrata o período).
+        columns:
+          - name: codigo_cnes
+            description: Código CNES do estabelecimento.
+            data_tests:
+              - unique
+              - not_null

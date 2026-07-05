@@ -9,3 +9,12 @@ models:
         data_tests:
           - unique
           - not_null
+
+  - name: dim_estabelecimento
+    description: Dimensão de estabelecimentos de saúde do CNES.
+    columns:
+      - name: codigo_cnes
+        description: Código CNES do estabelecimento. Chave da dimensão.
+        data_tests:
+          - unique
+          - not_null

@@ -1,0 +1,23 @@
+codigo_natureza_juridica,descricao_natureza_juridica
+1015,Órgão Público do Poder Executivo Federal
+1023,Órgão Público do Poder Executivo Estadual ou do Distrito Federal
+1031,Órgão Público do Poder Executivo Municipal
+1104,Autarquia Federal
+1112,Autarquia Estadual ou do Distrito Federal
+1139,Fundação Pública de Direito Público Federal
+1147,Fundação Pública de Direito Público Estadual ou do Distrito Federal
+1260,Fundação Pública de Direito Privado Estadual ou do Distrito Federal
+2011,Empresa Pública
+2038,Sociedade de Economia Mista
+2046,Sociedade Anônima Aberta
+2054,Sociedade Anônima Fechada
+2062,Sociedade Empresária Limitada
+2135,Empresário (Individual)
+2143,Cooperativa
+2232,Sociedade Simples Pura
+2240,Sociedade Simples Limitada
+2259,Sociedade Simples em Nome Coletivo
+3069,Fundação Privada
+3077,Serviço Social Autônomo
+3131,Entidade Sindical
+3999,Associação Privada
