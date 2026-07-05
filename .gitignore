@@ -1,3 +1,6 @@
+# Backups do Postgres gerados por `just backup-db` (dados reais, não vão pro git)
+backups/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
