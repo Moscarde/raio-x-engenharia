@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS raw_sih.internacoes (
     numero_aih TEXT PRIMARY KEY,
     codigo_cnes_estabelecimento TEXT NOT NULL,
     -- Código IBGE de 6 dígitos sem dígito verificador (MUNIC_MOV do SIH);
-    -- ver MUNICIPIO_REFERENCIA_CODUFMUN em parser.py.
+    -- ver MUNICIPIOS_REFERENCIA_CODUFMUN em parser.py.
     cod_municipio_ibge6_estabelecimento TEXT NOT NULL,
     cod_municipio_ibge6_paciente TEXT NOT NULL,
     competencia TEXT NOT NULL,

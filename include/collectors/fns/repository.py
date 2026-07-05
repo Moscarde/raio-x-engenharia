@@ -18,7 +18,7 @@ CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS raw_fns.repasses (
     id_lancamento BIGINT PRIMARY KEY,
     -- Identificação do ente pelo FNS é por CNPJ, não por código IBGE; ver
-    -- MUNICIPIO_REFERENCIA_CNPJ em parser.py.
+    -- MUNICIPIOS_REFERENCIA_CNPJ em parser.py.
     cnpj_ente_solicitante TEXT NOT NULL,
     nome_ente_solicitante TEXT NOT NULL,
     codigo_programa_agil TEXT,

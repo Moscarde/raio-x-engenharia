@@ -1,14 +1,14 @@
 import pytest
 
 from include.collectors.fns.parser import (
-    MUNICIPIO_REFERENCIA_CNPJ,
+    MUNICIPIOS_REFERENCIA_CNPJ,
     parse_lancamento,
     parse_lancamentos,
 )
 
 RAW_LANCAMENTO = {
     "id_lancamento_gestao_financeira": 2977057,
-    "cnpj_ente_solicitante_gestao_financeira": MUNICIPIO_REFERENCIA_CNPJ,
+    "cnpj_ente_solicitante_gestao_financeira": MUNICIPIOS_REFERENCIA_CNPJ[0],
     "nome_ente_solicitante_gestao_financeira": "MUNICIPIO DE RIO DE JANEIRO",
     "codigo_programa_agil_ente_solicitante_gestao_financeira": "140",
     "tipo_operacao_gestao_financeira": "C",
@@ -31,7 +31,7 @@ def test_parse_lancamento_normaliza_campos():
 
     assert resultado == {
         "id_lancamento": 2977057,
-        "cnpj_ente_solicitante": MUNICIPIO_REFERENCIA_CNPJ,
+        "cnpj_ente_solicitante": MUNICIPIOS_REFERENCIA_CNPJ[0],
         "nome_ente_solicitante": "MUNICIPIO DE RIO DE JANEIRO",
         "codigo_programa_agil": "140",
         "tipo_operacao": "C",
@@ -73,7 +73,7 @@ def test_parse_lancamento_rejeita_registro_sem_campo_obrigatorio(campo_ausente):
 def test_parse_lancamento_aceita_campos_opcionais_ausentes():
     raw_minimo = {
         "id_lancamento_gestao_financeira": 1,
-        "cnpj_ente_solicitante_gestao_financeira": MUNICIPIO_REFERENCIA_CNPJ,
+        "cnpj_ente_solicitante_gestao_financeira": MUNICIPIOS_REFERENCIA_CNPJ[0],
         "nome_ente_solicitante_gestao_financeira": "MUNICIPIO DE RIO DE JANEIRO",
         "tipo_operacao_gestao_financeira": "D",
         "descricao_tipo_operacao_gestao_financeira": "Débito",

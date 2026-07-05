@@ -25,20 +25,36 @@ A rota definitiva, campos e regras de parsing devem ser confirmados dentro de ca
 
 ## Escopo de volume para o MVP
 
-Fontes com grande volume de dados (CNES, SIA, SIH, SISAB, SIM, SINASC) devem,
-na primeira implementação, restringir a coleta a **um município de referência
-(Rio de Janeiro, id_municipio 3304557) e ao ano de 2025**. Isso mantém o MVP
-rápido de rodar e validar antes de abrir para todos os municípios/anos.
+Fontes com grande volume de dados (CNES, SIA, SIH, SISAB, SIM, SINASC, FNS,
+SIOPS) devem restringir a coleta a **municípios de referência e ao ano de
+2025**. Isso mantém o MVP rápido de rodar e validar antes de abrir para
+todos os municípios/anos.
 
-Referência do registro correspondente em `raw_ibge.municipios`:
+Município de referência original do MVP, mais 2 municípios adicionados em
+2026-07-05 (Paraty e Nova Iguaçu, ambos RJ) — 3 no total, em todas as fontes
+exceto IBGE (nacional, sem filtro) e SIA (estado inteiro desde 2026-07-04,
+ver seção abaixo):
 
 ```text
-id_municipio    nome_municipio    id_microrregiao    nome_microrregiao    id_mesorregiao    nome_mesorregiao    id_uf    sigla_uf    nome_uf    id_regiao    sigla_regiao    nome_regiao    _loaded_at    _source_url
-3304557    Rio de Janeiro    33018    Rio de Janeiro    3306    Metropolitana do Rio de Janeiro    33    RJ    Rio de Janeiro    3    SE    Sudeste    2026-07-04 07:40:44.230 -0300    https://servicodados.ibge.gov.br/api/v1/localidades/municipios
+id_municipio    nome_municipio    id_uf  sigla_uf
+3304557         Rio de Janeiro    33     RJ
+3303807         Paraty            33     RJ
+3303500         Nova Iguaçu       33     RJ
 ```
 
-Ampliar para outros municípios/anos é decisão explícita de uma etapa futura,
-não do MVP inicial.
+Códigos por fonte (cada uma usa um sistema de identificação diferente para
+o mesmo conjunto de municípios — ver constantes `MUNICIPIOS_REFERENCIA_*`
+em cada `parser.py`):
+
+| Fonte | Sistema de código | Rio de Janeiro | Paraty | Nova Iguaçu |
+| --- | --- | --- | --- | --- |
+| CNES/SIH/SIM/SINASC | IBGE 6 dígitos (sem DV) | 330455 | 330380 | 330350 |
+| SISAB (DEMAS) | IBGE 6 dígitos (sem DV) | 330455 | 330380 | 330350 |
+| SIOPS (SICONFI) | IBGE 7 dígitos (id_ente) | 3304557 | 3303807 | 3303500 |
+| FNS (Fundo a Fundo) | CNPJ do ente | 42498733000148 | 29172475000147 | 29138278000101 |
+
+Ampliar para outros municípios/anos além destes 3 é decisão explícita de
+uma etapa futura, não do MVP inicial.
 
 Exceção confirmada: **SIM** (óbitos) e **SINASC** (nascidos vivos) são bases
 anuais consolidadas com atraso de publicação — 2025 não está disponível no

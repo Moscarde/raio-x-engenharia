@@ -1,7 +1,7 @@
 import pytest
 
 from include.collectors.siops.parser import (
-    MUNICIPIO_REFERENCIA_ID_ENTE,
+    MUNICIPIOS_REFERENCIA_ID_ENTE,
     parse_linha_rreo,
     parse_linhas_rreo,
 )
@@ -12,7 +12,7 @@ RAW_LINHA = {
     "periodo": 6,
     "periodicidade": "B",
     "instituicao": "Prefeitura Municipal do Rio de Janeiro - RJ",
-    "cod_ibge": MUNICIPIO_REFERENCIA_ID_ENTE,
+    "cod_ibge": MUNICIPIOS_REFERENCIA_ID_ENTE[0],
     "uf": "RJ",
     "populacao": 6625849,
     "anexo": "RREO-Anexo 14",
@@ -34,7 +34,7 @@ def test_parse_linha_rreo_normaliza_campos():
         "periodo_bimestre": 6,
         "periodicidade": "B",
         "instituicao": "Prefeitura Municipal do Rio de Janeiro - RJ",
-        "id_municipio": MUNICIPIO_REFERENCIA_ID_ENTE,
+        "id_municipio": MUNICIPIOS_REFERENCIA_ID_ENTE[0],
         "uf": "RJ",
         "populacao": 6625849,
         "anexo": "RREO-Anexo 14",
@@ -59,4 +59,4 @@ def test_parse_linhas_rreo_processa_lista_completa():
     resultado = parse_linhas_rreo([RAW_LINHA, RAW_LINHA])
 
     assert len(resultado) == 2
-    assert resultado[0]["id_municipio"] == MUNICIPIO_REFERENCIA_ID_ENTE
+    assert resultado[0]["id_municipio"] == MUNICIPIOS_REFERENCIA_ID_ENTE[0]

@@ -21,14 +21,15 @@ REQUIRED_FIELDS = (
     "_arquivo_origem",
 )
 
-# Rio de Janeiro: id_municipio 3304557 em raw_ibge.municipios. O SINASC usa
+# Municípios de referência (id_municipio em raw_ibge.municipios: Rio de
+# Janeiro 3304557, Paraty 3303807, Nova Iguaçu 3303500). O SINASC usa
 # CODMUNNASC para o município de nascimento (hospital), mesmo código IBGE de
 # 6 dígitos sem dígito verificador do CNES/SIA/SIH/SIM (confirmado contra
 # amostra real: CODMUNNASC "330455" concentra os nascimentos do Rio em
 # DNRJ2022.dbc). CODMUNRES é o município de residência da mãe, mantido como
-# dimensão, não como filtro. Escopo MVP restringe a este município (ver
+# dimensão, não como filtro. Escopo MVP restringe a estes municípios (ver
 # docs/fontes.md#escopo-de-volume-para-o-mvp).
-MUNICIPIO_REFERENCIA_CODUFMUN = "330455"
+MUNICIPIOS_REFERENCIA_CODUFMUN = ("330455", "330380", "330350")
 
 
 def parse_nascido_vivo(raw: dict) -> dict:
@@ -72,15 +73,15 @@ def parse_nascido_vivo(raw: dict) -> dict:
 
 
 def parse_nascidos_vivos(raw_nascidos_vivos: list[dict]) -> list[dict]:
-    """Filtra pelo município de referência do MVP e normaliza cada registro.
+    """Filtra pelos municípios de referência do MVP e normaliza cada registro.
 
     O filtro por município acontece aqui (não no client) porque é escopo de
     ingestão do MVP, não uma limitação da fonte: o arquivo SINASC é
     distribuído por UF inteira, sem recorte por município.
     """
-    do_municipio = [
+    dos_municipios = [
         raw
         for raw in raw_nascidos_vivos
-        if raw.get("CODMUNNASC") == MUNICIPIO_REFERENCIA_CODUFMUN
+        if raw.get("CODMUNNASC") in MUNICIPIOS_REFERENCIA_CODUFMUN
     ]
-    return [parse_nascido_vivo(raw) for raw in do_municipio]
+    return [parse_nascido_vivo(raw) for raw in dos_municipios]

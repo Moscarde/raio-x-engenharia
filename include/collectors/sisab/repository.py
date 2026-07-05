@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS raw_sisab.indicador_desempenho (
     uf TEXT NOT NULL,
     municipio TEXT NOT NULL,
     -- Código IBGE de 6 dígitos sem dígito verificador; ver
-    -- MUNICIPIO_REFERENCIA_CODIGO_MUNICIPIO em parser.py.
+    -- MUNICIPIOS_REFERENCIA_CODIGO_MUNICIPIO em parser.py.
     codigo_municipio INTEGER NOT NULL,
     quadrimestre TEXT NOT NULL,
     competencia INTEGER NOT NULL,

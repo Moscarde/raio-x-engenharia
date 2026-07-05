@@ -1,7 +1,7 @@
 import pytest
 
 from include.collectors.sih.parser import (
-    MUNICIPIO_REFERENCIA_CODUFMUN,
+    MUNICIPIOS_REFERENCIA_CODUFMUN,
     parse_internacao,
     parse_internacoes,
 )
@@ -9,7 +9,7 @@ from include.collectors.sih.parser import (
 RAW_INTERNACAO = {
     "N_AIH": "3325100954329",
     "CNES": "6586767",
-    "MUNIC_MOV": MUNICIPIO_REFERENCIA_CODUFMUN,
+    "MUNIC_MOV": MUNICIPIOS_REFERENCIA_CODUFMUN[0],
     "MUNIC_RES": "330600",
     "ANO_CMPT": "2025",
     "MES_CMPT": "12",
@@ -34,7 +34,7 @@ def test_parse_internacao_normaliza_campos():
     assert resultado == {
         "numero_aih": "3325100954329",
         "codigo_cnes_estabelecimento": "6586767",
-        "cod_municipio_ibge6_estabelecimento": MUNICIPIO_REFERENCIA_CODUFMUN,
+        "cod_municipio_ibge6_estabelecimento": MUNICIPIOS_REFERENCIA_CODUFMUN[0],
         "cod_municipio_ibge6_paciente": "330600",
         "competencia": "202512",
         "codigo_procedimento": "0303040068",
@@ -68,7 +68,7 @@ def test_parse_internacoes_filtra_pelo_municipio_de_referencia():
     assert len(resultado) == 1
     assert (
         resultado[0]["cod_municipio_ibge6_estabelecimento"]
-        == MUNICIPIO_REFERENCIA_CODUFMUN
+        == MUNICIPIOS_REFERENCIA_CODUFMUN[0]
     )
 
 
@@ -78,3 +78,14 @@ def test_parse_internacoes_processa_lista_completa_do_municipio():
     resultado = parse_internacoes([RAW_INTERNACAO, outra_internacao])
 
     assert len(resultado) == 2
+
+
+def test_parse_internacoes_inclui_todos_os_municipios_de_referencia():
+    de_cada_municipio = [
+        {**RAW_INTERNACAO, "N_AIH": f"999{i}", "MUNIC_MOV": codigo}
+        for i, codigo in enumerate(MUNICIPIOS_REFERENCIA_CODUFMUN)
+    ]
+
+    resultado = parse_internacoes(de_cada_municipio)
+
+    assert len(resultado) == len(MUNICIPIOS_REFERENCIA_CODUFMUN)

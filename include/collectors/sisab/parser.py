@@ -21,11 +21,12 @@ REQUIRED_FIELDS = (
     "populacao",
 )
 
-# Rio de Janeiro: mesmo código IBGE de 6 dígitos sem dígito verificador do
-# CNES/SIA/SIH/SIM/SINASC (confirmado contra a API real:
-# "codigo_municipio": 330455 para "RIO DE JANEIRO"). Escopo MVP restringe a
-# este município (ver docs/fontes.md#escopo-de-volume-para-o-mvp).
-MUNICIPIO_REFERENCIA_CODIGO_MUNICIPIO = 330455
+# Municípios de referência: mesmo código IBGE de 6 dígitos sem dígito
+# verificador do CNES/SIA/SIH/SIM/SINASC (confirmado contra a API real:
+# "codigo_municipio": 330455 para "RIO DE JANEIRO", 330380 para "PARATY",
+# 330350 para "NOVA IGUAÇU"). Escopo MVP restringe a estes municípios (ver
+# docs/fontes.md#escopo-de-volume-para-o-mvp).
+MUNICIPIOS_REFERENCIA_CODIGO_MUNICIPIO = (330455, 330380, 330350)
 
 
 def parse_indicador_desempenho(raw: dict) -> dict:

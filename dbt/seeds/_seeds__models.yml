@@ -58,11 +58,12 @@ seeds:
       repasse) para o id_municipio (código IBGE completo). Fonte: API
       Fundo a Fundo do FNS
       (https://api.transferegov.gestao.gov.br/fundoafundo/gestao_financeira_lancamentos),
-      confirmada em 2026-07-04 ao consultar
-      nome_ente_solicitante_gestao_financeira pro CNPJ 42498733000148 →
-      "MUNICIPIO DE RIO DE JANEIRO" (ver
-      include/collectors/fns/parser.py). Cobertura: 1 de 1 — único ente no
-      escopo do MVP.
+      confirmada em 2026-07-04 (Rio de Janeiro) e 2026-07-05 (Paraty, Nova
+      Iguaçu) ao consultar nome_ente_solicitante_gestao_financeira pro CNPJ:
+      42498733000148 → "MUNICIPIO DE RIO DE JANEIRO", 29172475000147 →
+      "MUNICIPIO DE PARATI", 29138278000101 → "MUNICIPIO DE NOVA IGUACU"
+      (ver include/collectors/fns/parser.py). Cobertura: 3 de 3 — todos os
+      entes no escopo do MVP.
     columns:
       - name: cnpj_ente
         data_tests:

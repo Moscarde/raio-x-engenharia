@@ -20,12 +20,14 @@ REQUIRED_FIELDS = (
     "valor",
 )
 
-# Rio de Janeiro: mesmo id_municipio (7 dígitos) de raw_ibge.municipios —
-# o SICONFI identifica o ente pelo código IBGE completo (cod_ibge), sem
-# truncamento nem dígito verificador ausente como nas fontes DATASUS
-# (CODUFMUN/MUNIC_MOV/CODMUNOCOR de 6 dígitos). Escopo MVP restringe a este
-# município (ver docs/fontes.md#escopo-de-volume-para-o-mvp).
-MUNICIPIO_REFERENCIA_ID_ENTE = 3304557
+# Municípios de referência: mesmo id_municipio (7 dígitos) de
+# raw_ibge.municipios (Rio de Janeiro 3304557, Paraty 3303807, Nova Iguaçu
+# 3303500) — o SICONFI identifica o ente pelo código IBGE completo
+# (cod_ibge), sem truncamento nem dígito verificador ausente como nas
+# fontes DATASUS (CODUFMUN/MUNIC_MOV/CODMUNOCOR de 6 dígitos). Escopo MVP
+# restringe a estes municípios (ver
+# docs/fontes.md#escopo-de-volume-para-o-mvp).
+MUNICIPIOS_REFERENCIA_ID_ENTE = (3304557, 3303807, 3303500)
 
 
 def parse_linha_rreo(raw: dict) -> dict:

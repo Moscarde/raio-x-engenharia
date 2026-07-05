@@ -21,14 +21,15 @@ REQUIRED_FIELDS = (
     "_arquivo_origem",
 )
 
-# Rio de Janeiro: id_municipio 3304557 em raw_ibge.municipios. O SIM usa
+# Municípios de referência (id_municipio em raw_ibge.municipios: Rio de
+# Janeiro 3304557, Paraty 3303807, Nova Iguaçu 3303500). O SIM usa
 # CODMUNOCOR para o município de ocorrência do óbito, mesmo código IBGE de
 # 6 dígitos sem dígito verificador do CNES/SIA/SIH (confirmado contra
 # amostra real: CODMUNOCOR "330455" concentra os óbitos do Rio em
 # DORJ2024.dbc). CODMUNRES é o município de residência do falecido, mantido
-# como dimensão, não como filtro. Escopo MVP restringe a este município (ver
-# docs/fontes.md#escopo-de-volume-para-o-mvp).
-MUNICIPIO_REFERENCIA_CODUFMUN = "330455"
+# como dimensão, não como filtro. Escopo MVP restringe a estes municípios
+# (ver docs/fontes.md#escopo-de-volume-para-o-mvp).
+MUNICIPIOS_REFERENCIA_CODUFMUN = ("330455", "330380", "330350")
 
 
 def parse_obito(raw: dict) -> dict:
@@ -71,15 +72,15 @@ def parse_obito(raw: dict) -> dict:
 
 
 def parse_obitos(raw_obitos: list[dict]) -> list[dict]:
-    """Filtra pelo município de referência do MVP e normaliza cada registro.
+    """Filtra pelos municípios de referência do MVP e normaliza cada registro.
 
     O filtro por município acontece aqui (não no client) porque é escopo de
     ingestão do MVP, não uma limitação da fonte: o arquivo SIM é distribuído
     por UF inteira, sem recorte por município.
     """
-    do_municipio = [
+    dos_municipios = [
         raw
         for raw in raw_obitos
-        if raw.get("CODMUNOCOR") == MUNICIPIO_REFERENCIA_CODUFMUN
+        if raw.get("CODMUNOCOR") in MUNICIPIOS_REFERENCIA_CODUFMUN
     ]
-    return [parse_obito(raw) for raw in do_municipio]
+    return [parse_obito(raw) for raw in dos_municipios]

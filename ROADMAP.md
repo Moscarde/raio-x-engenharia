@@ -33,7 +33,7 @@ collector via `python -m ...` no host, mas errado de dentro da rede docker
 do Airflow, onde o Postgres é alcançável pelo hostname de serviço
 `postgres`. Exige `astro dev restart` para aplicar.
 
-## Status de carga de dados (Rio de Janeiro, escopo MVP)
+## Status de carga de dados (escopo MVP: Rio de Janeiro + Paraty + Nova Iguaçu)
 
 Consultado direto no Postgres local (`select count(*) ... group by
 ano/competência` em cada schema raw). "Completo p/ 2025" avalia contra o
@@ -41,19 +41,66 @@ escopo padrão do MVP (docs/fontes.md#escopo-de-volume-para-o-mvp); fontes
 anuais/periódicas com atraso real de publicação não têm 2025 disponível na
 própria origem (não é falha da coleta, ver Observações pendentes).
 
+Escopo ampliado em 2026-07-05 de 1 para 3 municípios (Rio de Janeiro,
+Paraty, Nova Iguaçu) em todas as fontes exceto IBGE (nacional) e SIA
+(estado RJ inteiro desde 2026-07-04 — já incluía os 3 antes da mudança).
+Contagens abaixo já refletem os 3 municípios somados.
+
 | Fonte | Ano/período carregado | Linhas no Postgres | Completo p/ 2025? |
 | --- | --- | --- | --- |
 | IBGE | cadastro corrente (sem recorte de ano) | 5.571 municípios | N/A — não é escopo anual |
-| CNES | 2025-12 (1 competência; cadastro é snapshot, basta 1 mês) | 17.380 | ✅ sim |
-| SIA | 2025, 12 competências (estado RJ inteiro, não só Rio) | 99.927.543 | ✅ sim |
-| SIH | 2025, 12 competências | 352.790 | ✅ sim |
-| FNS | 2025, ano completo (1 chamada de API) | 23 | ✅ sim |
-| SIOPS | 2025, bimestre 6 (fechamento, valores cumulativos) | 80 | ✅ sim |
-| SIM | 2024 (2025 não publicado no DATASUS) | 64.704 | ❌ estrutural — fonte sem 2025 ainda |
-| SINASC | 2022 (2025 não publicado no DATASUS, maior atraso) | 69.427 | ❌ estrutural — fonte sem 2025 ainda |
-| SISAB | 2024Q3 (Previne Brasil extinto em 2024) | 18 | ❌ estrutural — série descontinuada, nunca terá 2025 |
+| CNES | 2025-12 (1 competência; cadastro é snapshot, basta 1 mês) | 18.828 | ✅ sim |
+| SIA | 2025, 12 competências (estado RJ inteiro, não só os 3 municípios) | 99.927.543 | ✅ sim |
+| SIH | 2025, 12 competências | 389.923 | ✅ sim |
+| FNS | 2025, ano completo (1 chamada de API por município) | 271 | ✅ sim |
+| SIOPS | 2025, bimestre 6 (fechamento, valores cumulativos) | 191 | ✅ sim |
+| SIM | 2024 (2025 não publicado no DATASUS) | 72.816 | ❌ estrutural — fonte sem 2025 ainda |
+| SINASC | 2022 (2025 não publicado no DATASUS, maior atraso) | 75.783 | ❌ estrutural — fonte sem 2025 ainda |
+| SISAB | 2024Q3 (Previne Brasil extinto em 2024) | 54 | ❌ estrutural — série descontinuada, nunca terá 2025 |
+
+Quebra por município (raw, 2026-07-05):
+
+| Fonte | Rio de Janeiro | Paraty | Nova Iguaçu |
+| --- | --- | --- | --- |
+| CNES | 17.380 | 60 | 1.388 |
+| SIH | 352.790 | 3.152 | 33.981 |
+| SIM | 64.704 | 253 | 7.859 |
+| SINASC | 69.427 | 535 | 5.821 |
+| SISAB | 18 | 18 | 18 |
+| FNS | 23 | 12 | 236 |
+| SIOPS | 80 | 54 | 57 |
 
 ## Observações pendentes
+
+- **Expansão para Paraty e Nova Iguaçu (2026-07-05)**: escopo do MVP saiu
+  de 1 município (Rio de Janeiro) para 3, em todas as fontes exceto IBGE
+  (nacional, sem filtro) e SIA (já cobria o estado inteiro desde
+  2026-07-04). Cada fonte identifica município por um sistema de código
+  diferente (ver tabela em docs/fontes.md#escopo-de-volume-para-o-mvp);
+  os códigos de Paraty/Nova Iguaçu para CNES/SIH/SIM/SINASC/SISAB (IBGE 6
+  dígitos) e SIOPS (IBGE 7 dígitos) já eram conhecidos via
+  `raw_ibge.municipios`. O CNPJ de cada um pro FNS não era óbvio — não tem
+  de-para público direto de município para CNPJ do Fundo Municipal de
+  Saúde — então foi descoberto consultando a própria API do FNS por nome
+  do ente (`nome_ente_solicitante_gestao_financeira=ilike.*PARATI*` /
+  `*IGUACU*`) e confirmando que o CNPJ encontrado retorna lançamentos reais
+  em 2025: Paraty `29172475000147`, Nova Iguaçu `29138278000101`.
+  Mudanças: `parser.py` de cada fonte trocou a constante singular
+  `MUNICIPIO_REFERENCIA_*` por uma tupla `MUNICIPIOS_REFERENCIA_*` (3
+  códigos); CNES e SIH (upsert por chave natural) só precisaram alargar o
+  filtro; SIM e SINASC (delete+insert por partição ano+município) tiveram
+  o `DELETE` migrado para `= ANY(%(municipios)s)`, processando os 3 num
+  lote só; SISAB, FNS e SIOPS (1 chamada de API por município) passaram a
+  iterar a tupla em `run()`, cada um mantendo sua partição/upsert por
+  município como já fazia para 1. `seed_fns_ente_municipio.csv` (de-para
+  CNPJ → id_municipio, ver ROADMAP_DBT.md) ganhou as 2 linhas novas — sem
+  isso, `mart_repasses_fns` teria `id_municipio` NULL para os lançamentos
+  dos 2 municípios novos (pegou pelo teste `not_null` do dbt, que falhou
+  antes do seed ser atualizado). Todas as contagens do Rio de Janeiro
+  ficaram intactas depois da mudança (confirmado por município antes e
+  depois); 182 testes de collector (`pytest tests/collectors`) e 71 testes
+  dbt continuam passando (70 PASS + 1 WARN esperado, mesma razão de
+  sempre).
 
 - **SIOPS**: a rota candidata original (site legado
   `siops.datasus.gov.br`) foi abandonada — seu relatório de cálculo do %

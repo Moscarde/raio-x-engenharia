@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS raw_sinasc.nascidos_vivos (
     origem_informacao TEXT NOT NULL,
     codigo_cnes_estabelecimento TEXT NOT NULL,
     -- Código IBGE de 6 dígitos sem dígito verificador (CODMUNNASC do
-    -- SINASC); ver MUNICIPIO_REFERENCIA_CODUFMUN em parser.py.
+    -- SINASC); ver MUNICIPIOS_REFERENCIA_CODUFMUN em parser.py.
     cod_municipio_ibge6_nascimento TEXT NOT NULL,
     cod_municipio_ibge6_residencia TEXT NOT NULL,
     data_nascimento TEXT NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS raw_sinasc.nascidos_vivos (
 DELETE_PARTICAO_SQL = """
 DELETE FROM raw_sinasc.nascidos_vivos
 WHERE _reference_year = %(ano)s
-  AND cod_municipio_ibge6_nascimento = %(municipio)s;
+  AND cod_municipio_ibge6_nascimento = ANY(%(municipios)s);
 """
 
 COLUNAS_INSERT = (
@@ -79,17 +79,21 @@ def ensure_schema(conn: psycopg.Connection) -> None:
 def substituir_nascidos_vivos(
     conn: psycopg.Connection,
     nascidos_vivos: list[dict],
-    municipio: str,
+    municipios: tuple[str, ...],
     ano: int,
 ) -> int:
-    """Substitui a partição (ano + município) com os nascimentos normalizados.
+    """Substitui a partição (ano + municípios de referência) com os nascimentos normalizados.
 
-    Retorna a quantidade de linhas inseridas.
+    `municipios` é o conjunto inteiro de códigos processados nesta chamada
+    (não uma chave de linha) — a partição cobre todos eles de uma vez, já
+    que `nascidos_vivos` também foi filtrado para o mesmo conjunto (ver
+    `parser.parse_nascidos_vivos`). Retorna a quantidade de linhas
+    inseridas.
     """
     loaded_at = dt.datetime.now(dt.timezone.utc)
 
     with conn.cursor() as cur:
-        cur.execute(DELETE_PARTICAO_SQL, {"ano": ano, "municipio": municipio})
+        cur.execute(DELETE_PARTICAO_SQL, {"ano": ano, "municipios": list(municipios)})
 
         with cur.copy(
             f"COPY raw_sinasc.nascidos_vivos ({', '.join(COLUNAS_INSERT)}) FROM STDIN"

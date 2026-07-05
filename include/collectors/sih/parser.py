@@ -23,14 +23,15 @@ REQUIRED_FIELDS = (
     "_arquivo_origem",
 )
 
-# Rio de Janeiro: id_municipio 3304557 em raw_ibge.municipios. O SIH usa
+# Municípios de referência (id_municipio em raw_ibge.municipios: Rio de
+# Janeiro 3304557, Paraty 3303807, Nova Iguaçu 3303500). O SIH usa
 # MUNIC_MOV para o município do estabelecimento (hospital), mesmo código
 # IBGE de 6 dígitos sem dígito verificador do CNES/SIA (confirmado contra
 # amostra real: MUNIC_MOV "330455" concentra as internações do Rio em
 # RDRJ2512.dbc). MUNIC_RES é o município de residência do paciente, mantido
-# como dimensão, não como filtro. Escopo MVP restringe a este município (ver
-# docs/fontes.md#escopo-de-volume-para-o-mvp).
-MUNICIPIO_REFERENCIA_CODUFMUN = "330455"
+# como dimensão, não como filtro. Escopo MVP restringe a estes municípios
+# (ver docs/fontes.md#escopo-de-volume-para-o-mvp).
+MUNICIPIOS_REFERENCIA_CODUFMUN = ("330455", "330380", "330350")
 
 
 def parse_internacao(raw: dict) -> dict:
@@ -77,15 +78,15 @@ def parse_internacao(raw: dict) -> dict:
 
 
 def parse_internacoes(raw_internacoes: list[dict]) -> list[dict]:
-    """Filtra pelo município de referência do MVP e normaliza cada registro.
+    """Filtra pelos municípios de referência do MVP e normaliza cada registro.
 
     O filtro por município acontece aqui (não no client) porque é escopo de
     ingestão do MVP, não uma limitação da fonte: o arquivo SIH é distribuído
     por UF inteira, sem recorte por município.
     """
-    do_municipio = [
+    dos_municipios = [
         raw
         for raw in raw_internacoes
-        if raw.get("MUNIC_MOV") == MUNICIPIO_REFERENCIA_CODUFMUN
+        if raw.get("MUNIC_MOV") in MUNICIPIOS_REFERENCIA_CODUFMUN
     ]
-    return [parse_internacao(raw) for raw in do_municipio]
+    return [parse_internacao(raw) for raw in dos_municipios]

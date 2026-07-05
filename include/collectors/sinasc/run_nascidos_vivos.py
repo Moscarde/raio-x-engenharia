@@ -12,10 +12,13 @@ import time
 from include.collectors.sinasc.client import fetch_nascidos_vivos
 from include.collectors.sinasc.db import get_connection
 from include.collectors.sinasc.parser import (
-    MUNICIPIO_REFERENCIA_CODUFMUN,
+    MUNICIPIOS_REFERENCIA_CODUFMUN,
     parse_nascidos_vivos,
 )
-from include.collectors.sinasc.repository import ensure_schema, substituir_nascidos_vivos
+from include.collectors.sinasc.repository import (
+    ensure_schema,
+    substituir_nascidos_vivos,
+)
 
 UF = "RJ"
 
@@ -38,7 +41,7 @@ def run() -> int:
     with get_connection() as conn:
         ensure_schema(conn)
         total = substituir_nascidos_vivos(
-            conn, nascidos_vivos, MUNICIPIO_REFERENCIA_CODUFMUN, ANO
+            conn, nascidos_vivos, MUNICIPIOS_REFERENCIA_CODUFMUN, ANO
         )
 
     elapsed = time.monotonic() - start

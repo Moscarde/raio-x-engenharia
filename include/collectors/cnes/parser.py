@@ -18,12 +18,13 @@ REQUIRED_FIELDS = (
     "DT_ATUAL",
 )
 
-# Rio de Janeiro: id_municipio 3304557 em raw_ibge.municipios. O CNES usa
+# Municípios de referência (id_municipio em raw_ibge.municipios: Rio de
+# Janeiro 3304557, Paraty 3303807, Nova Iguaçu 3303500). O CNES usa
 # CODUFMUN, código IBGE de 6 dígitos sem o dígito verificador (confirmado
 # contra amostra real do CNES: CODUFMUN "330455" para as ~17k linhas do RJ
-# capital em STRJ2512.dbc). Escopo MVP restringe a este município (ver
+# capital em STRJ2512.dbc). Escopo MVP restringe a estes municípios (ver
 # docs/fontes.md#escopo-de-volume-para-o-mvp).
-MUNICIPIO_REFERENCIA_CODUFMUN = "330455"
+MUNICIPIOS_REFERENCIA_CODUFMUN = ("330455", "330380", "330350")
 
 
 def parse_estabelecimento(raw: dict) -> dict:
@@ -66,15 +67,15 @@ def parse_estabelecimento(raw: dict) -> dict:
 
 
 def parse_estabelecimentos(raw_estabelecimentos: list[dict]) -> list[dict]:
-    """Filtra pelo município de referência do MVP e normaliza cada registro.
+    """Filtra pelos municípios de referência do MVP e normaliza cada registro.
 
     O filtro por município acontece aqui (não no client) porque é escopo de
     ingestão do MVP, não uma limitação da fonte: o arquivo CNES é distribuído
     por UF inteira, sem recorte por município.
     """
-    do_municipio = [
+    dos_municipios = [
         raw
         for raw in raw_estabelecimentos
-        if raw.get("CODUFMUN") == MUNICIPIO_REFERENCIA_CODUFMUN
+        if raw.get("CODUFMUN") in MUNICIPIOS_REFERENCIA_CODUFMUN
     ]
-    return [parse_estabelecimento(raw) for raw in do_municipio]
+    return [parse_estabelecimento(raw) for raw in dos_municipios]

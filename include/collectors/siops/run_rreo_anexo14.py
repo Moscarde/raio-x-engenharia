@@ -12,7 +12,7 @@ import time
 from include.collectors.siops.client import ENDPOINT_RREO, fetch_rreo_anexo14
 from include.collectors.siops.db import get_connection
 from include.collectors.siops.parser import (
-    MUNICIPIO_REFERENCIA_ID_ENTE,
+    MUNICIPIOS_REFERENCIA_ID_ENTE,
     parse_linhas_rreo,
 )
 from include.collectors.siops.repository import ensure_schema, substituir_rreo_anexo14
@@ -30,33 +30,45 @@ logger = logging.getLogger(__name__)
 
 
 def run() -> int:
-    """Busca, normaliza e grava o RREO-Anexo 14 de ANO em raw_siops.rreo_anexo14."""
+    """Busca, normaliza e grava o RREO-Anexo 14 de ANO em raw_siops.rreo_anexo14.
+
+    1 chamada por id_ente (código IBGE completo) de referência — a API do
+    SICONFI filtra por ente na própria consulta, sem recorte por UF inteira.
+    """
     start = time.monotonic()
-    raw_linhas = fetch_rreo_anexo14(
-        MUNICIPIO_REFERENCIA_ID_ENTE, ANO, PERIODO_FECHAMENTO_EXERCICIO
-    )
-    linhas = parse_linhas_rreo(raw_linhas)
+    total_geral = 0
 
     with get_connection() as conn:
         ensure_schema(conn)
-        total = substituir_rreo_anexo14(
-            conn,
-            linhas,
-            MUNICIPIO_REFERENCIA_ID_ENTE,
-            ANO,
-            PERIODO_FECHAMENTO_EXERCICIO,
-            ENDPOINT_RREO,
-        )
+
+        for id_ente in MUNICIPIOS_REFERENCIA_ID_ENTE:
+            raw_linhas = fetch_rreo_anexo14(id_ente, ANO, PERIODO_FECHAMENTO_EXERCICIO)
+            linhas = parse_linhas_rreo(raw_linhas)
+            total_ente = substituir_rreo_anexo14(
+                conn,
+                linhas,
+                id_ente,
+                ANO,
+                PERIODO_FECHAMENTO_EXERCICIO,
+                ENDPOINT_RREO,
+            )
+            total_geral += total_ente
+            logger.info(
+                "raw_siops.rreo_anexo14: %s linhas carregadas (id_ente=%s, ano=%s, bimestre=%s)",
+                total_ente,
+                id_ente,
+                ANO,
+                PERIODO_FECHAMENTO_EXERCICIO,
+            )
 
     elapsed = time.monotonic() - start
     logger.info(
-        "raw_siops.rreo_anexo14: %s linhas carregadas em %.1fs (ano=%s, bimestre=%s)",
-        total,
+        "raw_siops.rreo_anexo14: %s linhas no total, %s municípios, em %.1fs",
+        total_geral,
+        len(MUNICIPIOS_REFERENCIA_ID_ENTE),
         elapsed,
-        ANO,
-        PERIODO_FECHAMENTO_EXERCICIO,
     )
-    return total
+    return total_geral
 
 
 if __name__ == "__main__":

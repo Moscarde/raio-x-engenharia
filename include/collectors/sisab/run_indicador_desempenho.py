@@ -15,7 +15,7 @@ from include.collectors.sisab.client import (
 )
 from include.collectors.sisab.db import get_connection
 from include.collectors.sisab.parser import (
-    MUNICIPIO_REFERENCIA_CODIGO_MUNICIPIO,
+    MUNICIPIOS_REFERENCIA_CODIGO_MUNICIPIO,
     parse_indicadores_desempenho,
 )
 from include.collectors.sisab.repository import (
@@ -35,31 +35,44 @@ logger = logging.getLogger(__name__)
 
 
 def run() -> int:
-    """Busca, normaliza e grava os indicadores de QUADRIMESTRE em raw_sisab.indicador_desempenho."""
+    """Busca, normaliza e grava os indicadores de QUADRIMESTRE em raw_sisab.indicador_desempenho.
+
+    A API do DEMAS filtra por município na própria consulta (client.py), não
+    tem recorte por UF inteira como as fontes DBC — por isso 1 município por
+    chamada, iterando os municípios de referência do MVP.
+    """
     start = time.monotonic()
-    raw_linhas = fetch_indicadores_desempenho(
-        MUNICIPIO_REFERENCIA_CODIGO_MUNICIPIO, QUADRIMESTRE
-    )
-    indicadores = parse_indicadores_desempenho(raw_linhas)
+    total_geral = 0
 
     with get_connection() as conn:
         ensure_schema(conn)
-        total = substituir_indicadores_desempenho(
-            conn,
-            indicadores,
-            MUNICIPIO_REFERENCIA_CODIGO_MUNICIPIO,
-            QUADRIMESTRE,
-            ENDPOINT_INDICADOR_DESEMPENHO,
-        )
+
+        for municipio in MUNICIPIOS_REFERENCIA_CODIGO_MUNICIPIO:
+            raw_linhas = fetch_indicadores_desempenho(municipio, QUADRIMESTRE)
+            indicadores = parse_indicadores_desempenho(raw_linhas)
+            total_municipio = substituir_indicadores_desempenho(
+                conn,
+                indicadores,
+                municipio,
+                QUADRIMESTRE,
+                ENDPOINT_INDICADOR_DESEMPENHO,
+            )
+            total_geral += total_municipio
+            logger.info(
+                "raw_sisab.indicador_desempenho: %s linhas carregadas (municipio=%s, quadrimestre=%s)",
+                total_municipio,
+                municipio,
+                QUADRIMESTRE,
+            )
 
     elapsed = time.monotonic() - start
     logger.info(
-        "raw_sisab.indicador_desempenho: %s linhas carregadas em %.1fs (quadrimestre=%s)",
-        total,
+        "raw_sisab.indicador_desempenho: %s linhas no total, %s municípios, em %.1fs",
+        total_geral,
+        len(MUNICIPIOS_REFERENCIA_CODIGO_MUNICIPIO),
         elapsed,
-        QUADRIMESTRE,
     )
-    return total
+    return total_geral
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS raw_cnes.estabelecimentos (
     codigo_cnes TEXT PRIMARY KEY,
     -- Código IBGE de 6 dígitos sem dígito verificador (CODUFMUN do CNES);
-    -- ver MUNICIPIO_REFERENCIA_CODUFMUN em parser.py.
+    -- ver MUNICIPIOS_REFERENCIA_CODUFMUN em parser.py.
     cod_municipio_ibge6 TEXT NOT NULL,
     tipo_pessoa TEXT NOT NULL,
     nivel_dependencia TEXT NOT NULL,

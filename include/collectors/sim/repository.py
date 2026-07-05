@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS raw_sim.obitos (
     origem_informacao TEXT NOT NULL,
     codigo_cnes_estabelecimento TEXT NOT NULL,
     -- Código IBGE de 6 dígitos sem dígito verificador (CODMUNOCOR do SIM);
-    -- ver MUNICIPIO_REFERENCIA_CODUFMUN em parser.py.
+    -- ver MUNICIPIOS_REFERENCIA_CODUFMUN em parser.py.
     cod_municipio_ibge6_ocorrencia TEXT NOT NULL,
     cod_municipio_ibge6_residencia TEXT NOT NULL,
     data_obito TEXT NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS raw_sim.obitos (
 DELETE_PARTICAO_SQL = """
 DELETE FROM raw_sim.obitos
 WHERE _reference_year = %(ano)s
-  AND cod_municipio_ibge6_ocorrencia = %(municipio)s;
+  AND cod_municipio_ibge6_ocorrencia = ANY(%(municipios)s);
 """
 
 COLUNAS_INSERT = (
@@ -83,17 +83,20 @@ def ensure_schema(conn: psycopg.Connection) -> None:
 def substituir_obitos(
     conn: psycopg.Connection,
     obitos: list[dict],
-    municipio: str,
+    municipios: tuple[str, ...],
     ano: int,
 ) -> int:
-    """Substitui a partição (ano + município) com os óbitos normalizados.
+    """Substitui a partição (ano + municípios de referência) com os óbitos normalizados.
 
-    Retorna a quantidade de linhas inseridas.
+    `municipios` é o conjunto inteiro de códigos processados nesta chamada
+    (não uma chave de linha) — a partição cobre todos eles de uma vez, já
+    que `obitos` também foi filtrado para o mesmo conjunto (ver
+    `parser.parse_obitos`). Retorna a quantidade de linhas inseridas.
     """
     loaded_at = dt.datetime.now(dt.timezone.utc)
 
     with conn.cursor() as cur:
-        cur.execute(DELETE_PARTICAO_SQL, {"ano": ano, "municipio": municipio})
+        cur.execute(DELETE_PARTICAO_SQL, {"ano": ano, "municipios": list(municipios)})
 
         with cur.copy(
             f"COPY raw_sim.obitos ({', '.join(COLUNAS_INSERT)}) FROM STDIN"

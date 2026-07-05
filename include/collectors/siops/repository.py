@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS raw_siops.rreo_anexo14 (
     periodicidade TEXT NOT NULL,
     instituicao TEXT NOT NULL,
     -- Código IBGE completo (7 dígitos), mesmo id_municipio de
-    -- raw_ibge.municipios; ver MUNICIPIO_REFERENCIA_ID_ENTE em parser.py.
+    -- raw_ibge.municipios; ver MUNICIPIOS_REFERENCIA_ID_ENTE em parser.py.
     id_municipio INTEGER NOT NULL,
     uf TEXT NOT NULL,
     populacao BIGINT NOT NULL,

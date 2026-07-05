@@ -11,7 +11,7 @@ import time
 
 from include.collectors.sim.client import fetch_obitos
 from include.collectors.sim.db import get_connection
-from include.collectors.sim.parser import MUNICIPIO_REFERENCIA_CODUFMUN, parse_obitos
+from include.collectors.sim.parser import MUNICIPIOS_REFERENCIA_CODUFMUN, parse_obitos
 from include.collectors.sim.repository import ensure_schema, substituir_obitos
 
 UF = "RJ"
@@ -34,7 +34,7 @@ def run() -> int:
 
     with get_connection() as conn:
         ensure_schema(conn)
-        total = substituir_obitos(conn, obitos, MUNICIPIO_REFERENCIA_CODUFMUN, ANO)
+        total = substituir_obitos(conn, obitos, MUNICIPIOS_REFERENCIA_CODUFMUN, ANO)
 
     elapsed = time.monotonic() - start
     logger.info(

@@ -1,14 +1,14 @@
 import pytest
 
 from include.collectors.cnes.parser import (
-    MUNICIPIO_REFERENCIA_CODUFMUN,
+    MUNICIPIOS_REFERENCIA_CODUFMUN,
     parse_estabelecimento,
     parse_estabelecimentos,
 )
 
 RAW_ESTABELECIMENTO = {
     "CNES": "0033979",
-    "CODUFMUN": MUNICIPIO_REFERENCIA_CODUFMUN,
+    "CODUFMUN": MUNICIPIOS_REFERENCIA_CODUFMUN[0],
     "PF_PJ": "1",
     "NIV_DEP": "1",
     "TP_UNID": "22",
@@ -28,7 +28,7 @@ def test_parse_estabelecimento_normaliza_campos():
 
     assert resultado == {
         "codigo_cnes": "0033979",
-        "cod_municipio_ibge6": MUNICIPIO_REFERENCIA_CODUFMUN,
+        "cod_municipio_ibge6": MUNICIPIOS_REFERENCIA_CODUFMUN[0],
         "tipo_pessoa": "1",
         "nivel_dependencia": "1",
         "tipo_unidade": "22",
@@ -67,3 +67,14 @@ def test_parse_estabelecimentos_processa_lista_completa_do_municipio():
 
     assert len(resultado) == 2
     assert resultado[0]["codigo_cnes"] == "0033979"
+
+
+def test_parse_estabelecimentos_inclui_todos_os_municipios_de_referencia():
+    de_cada_municipio = [
+        {**RAW_ESTABELECIMENTO, "CNES": f"999{i}", "CODUFMUN": codigo}
+        for i, codigo in enumerate(MUNICIPIOS_REFERENCIA_CODUFMUN)
+    ]
+
+    resultado = parse_estabelecimentos(de_cada_municipio)
+
+    assert len(resultado) == len(MUNICIPIOS_REFERENCIA_CODUFMUN)

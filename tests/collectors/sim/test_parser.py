@@ -1,7 +1,7 @@
 import pytest
 
 from include.collectors.sim.parser import (
-    MUNICIPIO_REFERENCIA_CODUFMUN,
+    MUNICIPIOS_REFERENCIA_CODUFMUN,
     parse_obito,
     parse_obitos,
 )
@@ -9,7 +9,7 @@ from include.collectors.sim.parser import (
 RAW_OBITO = {
     "ORIGEM": "1",
     "CODESTAB": "2269899",
-    "CODMUNOCOR": MUNICIPIO_REFERENCIA_CODUFMUN,
+    "CODMUNOCOR": MUNICIPIOS_REFERENCIA_CODUFMUN[0],
     "CODMUNRES": "330490",
     "DTOBITO": "01012024",
     "DTNASC": "05051960",
@@ -32,7 +32,7 @@ def test_parse_obito_normaliza_campos():
     assert resultado == {
         "origem_informacao": "1",
         "codigo_cnes_estabelecimento": "2269899",
-        "cod_municipio_ibge6_ocorrencia": MUNICIPIO_REFERENCIA_CODUFMUN,
+        "cod_municipio_ibge6_ocorrencia": MUNICIPIOS_REFERENCIA_CODUFMUN[0],
         "cod_municipio_ibge6_residencia": "330490",
         "data_obito": "01012024",
         "data_nascimento": "05051960",
@@ -63,10 +63,23 @@ def test_parse_obitos_filtra_pelo_municipio_de_referencia():
     resultado = parse_obitos([RAW_OBITO, outro_municipio])
 
     assert len(resultado) == 1
-    assert resultado[0]["cod_municipio_ibge6_ocorrencia"] == MUNICIPIO_REFERENCIA_CODUFMUN
+    assert (
+        resultado[0]["cod_municipio_ibge6_ocorrencia"]
+        == MUNICIPIOS_REFERENCIA_CODUFMUN[0]
+    )
 
 
 def test_parse_obitos_processa_lista_completa_do_municipio():
     resultado = parse_obitos([RAW_OBITO, RAW_OBITO])
 
     assert len(resultado) == 2
+
+
+def test_parse_obitos_inclui_todos_os_municipios_de_referencia():
+    de_cada_municipio = [
+        {**RAW_OBITO, "CODMUNOCOR": codigo} for codigo in MUNICIPIOS_REFERENCIA_CODUFMUN
+    ]
+
+    resultado = parse_obitos(de_cada_municipio)
+
+    assert len(resultado) == len(MUNICIPIOS_REFERENCIA_CODUFMUN)

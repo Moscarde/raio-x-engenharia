@@ -19,13 +19,20 @@ REQUIRED_FIELDS = (
     "valor_lancamento_gestao_financeira",
 )
 
-# Prefeitura do Rio de Janeiro: id_municipio 3304557 em raw_ibge.municipios.
-# O FNS identifica o ente por CNPJ, não por código IBGE (confirmado contra a
-# API real: cnpj "42498733000148" -> nome_ente "MUNICIPIO DE RIO DE JANEIRO").
-# O de-para CNPJ -> id_municipio fica para a camada staging/dbt, não para o
-# raw layer. Escopo MVP restringe a este município (ver
+# Municípios de referência (id_municipio em raw_ibge.municipios: Rio de
+# Janeiro 3304557, Paraty 3303807, Nova Iguaçu 3303500). O FNS identifica o
+# ente por CNPJ, não por código IBGE (confirmado contra a API real:
+# cnpj "42498733000148" -> "MUNICIPIO DE RIO DE JANEIRO";
+# "29172475000147" -> "MUNICIPIO DE PARATI";
+# "29138278000101" -> "MUNICIPIO DE NOVA IGUACU"). O de-para CNPJ ->
+# id_municipio fica para a camada staging/dbt, não para o raw layer. Escopo
+# MVP restringe a estes municípios (ver
 # docs/fontes.md#escopo-de-volume-para-o-mvp).
-MUNICIPIO_REFERENCIA_CNPJ = "42498733000148"
+MUNICIPIOS_REFERENCIA_CNPJ = (
+    "42498733000148",
+    "29172475000147",
+    "29138278000101",
+)
 
 
 def parse_lancamento(raw: dict) -> dict:
@@ -56,15 +63,11 @@ def parse_lancamento(raw: dict) -> dict:
             "codigo_programa_agil_ente_solicitante_gestao_financeira"
         ),
         "tipo_operacao": valores["tipo_operacao_gestao_financeira"],
-        "descricao_tipo_operacao": valores[
-            "descricao_tipo_operacao_gestao_financeira"
-        ],
+        "descricao_tipo_operacao": valores["descricao_tipo_operacao_gestao_financeira"],
         "descricao_lancamento": valores["descricao_gestao_financeira"],
         "data_lancamento": valores["data_lancamento_gestao_financeira"],
         "data_evento_lancamento": valores["data_evento_lancamento_gestao_financeira"],
-        "numero_referencia_unica": raw.get(
-            "numero_referencia_unica_gestao_financeira"
-        ),
+        "numero_referencia_unica": raw.get("numero_referencia_unica_gestao_financeira"),
         "tipo_favorecido": raw.get("tipo_favorecido_gestao_financeira"),
         "descricao_tipo_favorecido": raw.get(
             "descricao_tipo_favorecido_gestao_financeira"

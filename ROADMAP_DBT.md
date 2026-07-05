@@ -95,8 +95,8 @@ cobertura.
   `pdftotext`). Os 6 códigos observados no dado real (10-50, 70) mais o 60
   (não observado, incluído por completude) confirmados um a um.
 - ✅ `seed_fns_ente_municipio.csv` — fonte: API Fundo a Fundo do FNS,
-  confirmada contra a própria API em 2026-07-04. 1 de 1 (único ente no
-  MVP).
+  confirmada contra a própria API em 2026-07-04 (Rio de Janeiro) e
+  2026-07-05 (Paraty, Nova Iguaçu). 3 de 3 (todos os entes no MVP).
 - ⬜ `seed_cnes_tipo_unidade.csv` — pendente. 31 códigos distintos na
   competência 2025-12; nenhuma fonte oficial machine-readable encontrada
   ainda. `tipo_unidade` fica cru em `stg_cnes__estabelecimentos`.
@@ -190,3 +190,38 @@ cobertura.
 
 Todas as 8 fontes têm pelo menos 1 model rodando local — orquestração via
 DAGs Airflow chamando `dbt run`/`dbt test` é o próximo passo em aberto.
+
+## DAG dbt (implementada em 2026-07-05)
+
+`dags/dbt_transform.py` — 3 tasks (`dbt_seed >> dbt_run >> dbt_test`),
+disparo manual (`schedule=None`), mesmo padrão das DAGs de coleta.
+Validada de ponta a ponta dentro do container real do Airflow (`docker
+exec ... airflow tasks test dbt_transform <task>` para as 3 tasks).
+
+Decisões tomadas (resolvendo os pontos que ficaram em aberto):
+
+- **Isolamento de dependências**: nem `astronomer-cosmos` nem
+  `PythonVirtualenvOperator` — usa `@task.bash` (decorator nativo do
+  `airflow.sdk`) chamando um venv dedicado (`.dbt_venv/`, fora do repo via
+  `.gitignore`) criado com `uv` (já presente na imagem `astrocrpublic`,
+  confirmado — não precisou instalar nada a mais). Cada task garante o
+  venv antes de rodar (`test -x .dbt_venv/bin/dbt || uv venv ... && uv pip
+  install dbt-core dbt-postgres`) — criado só na 1ª execução (~5s via uv),
+  reaproveitado depois. Mais simples que cosmos (sem dependência nova) e
+  mais rápido que recriar venv a cada run (padrão do
+  `PythonVirtualenvOperator`).
+- **Granularidade**: 1 DAG com 3 tasks (seed/run/test), sem 1 task por
+  model — como previsto.
+- **Caminhos absolutos obrigatórios**: `@task.bash` roda o comando num cwd
+  próprio (tmpdir do `SubprocessHook`), não em `/usr/local/airflow` —
+  descoberto ao testar (`Error: Invalid value for '--project-dir': Path
+  'dbt' does not exist`). `DBT_PROJECT_DIR`/`DBT_PROFILES_DIR`/
+  `DBT_VENV_DIR` usam `/usr/local/airflow/...` fixo, não caminho relativo.
+- **Gatilho**: manual, sem `TriggerDagRunOperator` acoplando às DAGs de
+  coleta — como previsto, escopo delas ainda é fixo/hardcoded.
+- **SIA sem tratamento especial**: confirmado que um `dbt run` normal roda
+  como no-op (`INSERT 0 0`) quando não há `_loaded_at` novo; a var de
+  bootstrap do backfill (etapa 5) não entra na DAG.
+- **`profiles.yml`**: nenhum ajuste necessário, `env_var('POSTGRES_*')` já
+  resolve para o hostname `postgres` dentro do container (via
+  `docker-compose.override.yml`).
