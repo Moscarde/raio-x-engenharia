@@ -106,11 +106,24 @@ COLUNAS_INSERT = (
 )
 
 
+CREATE_INDEX_COMPETENCIA_ARQUIVO_SQL = """
+CREATE INDEX IF NOT EXISTS ix_producao_ambulatorial_competencia_arquivo
+ON raw_sia.producao_ambulatorial (competencia_arquivo);
+"""
+
+
 def ensure_schema(conn: psycopg.Connection) -> None:
-    """Cria o schema raw_sia e a tabela producao_ambulatorial, se ainda não existirem."""
+    """Cria o schema raw_sia, a tabela producao_ambulatorial e seu índice, se ainda não existirem.
+
+    O índice em `competencia_arquivo` é usado tanto pelo delete+insert por
+    partição desta tabela quanto pela carga em chunks do dbt (ver
+    ROADMAP_DBT.md, etapa 5) — sem ele, cada chunk faz full scan nos 99.9M+
+    registros.
+    """
     with conn.cursor() as cur:
         cur.execute(CREATE_SCHEMA_SQL)
         cur.execute(CREATE_TABLE_SQL)
+        cur.execute(CREATE_INDEX_COMPETENCIA_ARQUIVO_SQL)
     conn.commit()
 
 

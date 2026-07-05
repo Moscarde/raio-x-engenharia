@@ -171,3 +171,15 @@ própria origem (não é falha da coleta, ver Observações pendentes).
   batendo com o log, nenhuma sobrescrita pelo bug de partição (corrigido
   acima). Rodar manualmente quando fizer sentido:
   `python -m include.collectors.sia.run_producao_ambulatorial`.
+
+  **Handoff concluído em 2026-07-05, máquina nova**: ambiente montado do
+  zero (Fedora, sem pyenv/uv — python3.14 do sistema não suporta
+  `pysus==2.6.1`, que exige <3.14; instalado `python3.12` via `dnf` pra
+  criar o venv), `astro dev start` subiu limpo, `docker-compose.override.yml`
+  aplicado automaticamente na 1ª subida. As 9 fontes foram recarregadas do
+  zero contra o Postgres novo, todas batendo com as contagens documentadas
+  acima. Máquina bem mais rápida (236GB disco/19GB RAM): SIA completo em
+  **3.194s (~53min)**, contra ~2h28 na máquina anterior — mesmas
+  99.927.543 linhas, sem OOM (memória ficou apertada, chegou a usar swap,
+  mas não travou). Etapa 5 do dbt (bloqueada no handoff anterior por
+  estouro de disco) foi resolvida nesta máquina — ver ROADMAP_DBT.md.

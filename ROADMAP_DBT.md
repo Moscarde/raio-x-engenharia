@@ -18,17 +18,14 @@ em [CLAUDE.md](CLAUDE.md#convenções-de-nomeação-dbt).
   separados, não 1 — ver nota abaixo).
 - ✅ Etapa 8 — `stg_sisab__indicador_desempenho` +
   `seed_sisab_tipo_indicador` + `mart_indicadores_aps`.
-- ⬜ Etapa 5 — `stg_sia__producao_ambulatorial` + `fct_producao_ambulatorial`.
-  Não bloqueada mais: a carga completa de 2025 do SIA terminou em
-  2026-07-05 (99.927.543 linhas, estado RJ inteiro, ver ROADMAP.md) — só
-  não foi implementada ainda. Escopo do SIA mudou em 2026-07-04 — agora
-  carrega o **estado (UF) inteiro**, não só o Rio (ver ROADMAP.md e
-  docs/fontes.md#escopo-de-volume-para-o-mvp); `fct_producao_ambulatorial`
-  quando implementada não deve filtrar por município por padrão (ou deve
-  expor o filtro como parâmetro da query/mart, não do model).
+- ✅ Etapa 5 — `stg_sia__producao_ambulatorial` + `fct_producao_ambulatorial`,
+  concluída em 2026-07-05 na máquina nova (ver "Handoff resolvido" abaixo).
 
-Rodado de ponta a ponta a cada etapa (`dbt seed && dbt run && dbt test`):
-**17 models, 3 seeds, 65 testes, tudo passando.**
+Rodado de ponta a ponta (`dbt seed && dbt run && dbt test`):
+**19 models, 3 seeds, 71 testes — 70 PASS + 1 WARN esperado (relationship
+`fct_producao_ambulatorial` → `dim_estabelecimento`, mesma razão do WARN já
+existente em `fct_internacoes`: o CNES é um snapshot único de dez/2025, não
+cobre todo `codigo_cnes` referenciado no ano inteiro do SIA).
 
 ## Ajustes de design feitos durante a implementação
 
@@ -80,7 +77,7 @@ ainda reflete o que foi construído.
 | `stg_fns__repasses` | `raw_fns.repasses` | ✅ Já vem tipado; `tipo_operacao` C/D → `credito`/`debito`. |
 | `stg_siops__rreo_anexo14` | `raw_siops.rreo_anexo14` | ✅ Já vem tipado; passthrough (formato "long" mantido, pivot não valeu a pena pro volume atual — 80 linhas). |
 | `stg_sisab__indicador_desempenho` | `raw_sisab.indicador_desempenho` | ✅ `codigo_tipo_indicador` decodificado via seed (`seed_sisab_tipo_indicador`) pro número e descrição oficial do indicador Previne Brasil. |
-| `stg_sia__producao_ambulatorial` | `raw_sia.producao_ambulatorial` | ⬜ Pendente (etapa 5, bloqueada pela carga do SIA). |
+| `stg_sia__producao_ambulatorial` | `raw_sia.producao_ambulatorial` | ✅ Tipagem básica; `idade_paciente` com `nullif('999')` (sentinela oficial do layout SIA/PA para idade não informada). |
 
 ## Seeds (de-para)
 
@@ -111,7 +108,7 @@ cobertura.
 
 | Model | Status | O que faz |
 | --- | --- | --- |
-| `int_ibge__municipio_codigo6` | ✅ Implementado | Bridge `id_municipio` (7 dígitos) ↔ `cod_municipio_ibge6` (6 dígitos, `left(id_municipio::text, 6)`). Reaproveitado por `fct_internacoes`, `fct_obitos`, `fct_nascidos_vivos`, `mart_indicadores_aps` e (quando a etapa 5 sair) `fct_producao_ambulatorial`. |
+| `int_ibge__municipio_codigo6` | ✅ Implementado | Bridge `id_municipio` (7 dígitos) ↔ `cod_municipio_ibge6` (6 dígitos, `left(id_municipio::text, 6)`). Reaproveitado por `fct_internacoes`, `fct_obitos`, `fct_nascidos_vivos`, `mart_indicadores_aps` e `fct_producao_ambulatorial`. |
 
 ## Camada marts
 
@@ -125,9 +122,9 @@ cobertura.
 | `mart_repasses_fns` | mart | 1 por lançamento | ✅ |
 | `mart_financiamento_saude_siops` | mart | 1 por conta/coluna do RREO | ✅ |
 | `mart_indicadores_aps` | mart | 1 por indicador/visão de equipe | ✅ |
-| `fct_producao_ambulatorial` | fct | 1 por procedimento produzido | ⬜ etapa 5 |
+| `fct_producao_ambulatorial` | fct | 1 por procedimento produzido | ✅ |
 
-## Testes dbt (65 rodando)
+## Testes dbt (71 rodando)
 
 - `unique` + `not_null` na chave de grão de cada fct/dim/seed.
 - `relationships` de cada fct/mart para `dim_municipio` (e
@@ -141,49 +138,49 @@ cobertura.
   e 2 colunas do SINASC (`apgar1`/`apgar5`) vinham vazias em vez de `NULL`
   e quebravam o CAST.
 
-## Ordem de implementação (só falta a 5)
+## Ordem de implementação (todas as etapas concluídas)
 
 1. ✅ scaffold + `stg_ibge__municipios` + `dim_municipio`.
 2. ✅ `stg_cnes__estabelecimentos` + `dim_estabelecimento` + seed de
    natureza jurídica.
 3. ✅ `int_ibge__municipio_codigo6`.
 4. ✅ `stg_sih__internacoes` + `fct_internacoes`.
-5. ⬜ `stg_sia__producao_ambulatorial` + `fct_producao_ambulatorial` —
-   carga completa 2025 do SIA já terminou (99.927.543 linhas, RJ inteiro);
-   model e schema.yml já escritos (incremental por `competencia_arquivo`,
-   `delete+insert`), mas nunca terminou de rodar. **Handoff 2026-07-05:**
-   desenvolvimento migrado pra outra máquina; o que falta refazer/verificar
-   lá antes de seguir:
-   - Build travou 2x na primeira materialização: o model lê os 99.9M+
-     registros inteiros numa única transação (sem filtro de bootstrap),
-     gerou WAL suficiente pra encher o disco raiz da máquina antiga (108GB,
-     chegou a 27MB livres) e o processo `dbt run` morreu sem log de erro.
-     Não tentar `dbt run` direto na tabela inteira sem checar espaço em
-     disco livre antes (regra de bolso: raw da fonte × ~1.5-2 pra WAL/heap
-     da tabela nova).
-   - Estratégia recomendada (não implementada ainda): popular a tabela em
-     chunks por `competencia_arquivo` — dá log de progresso natural (1
-     linha por competência) em vez de esperar 2h+ no escuro sem saber se
-     travou. Precisa de 2 coisas antes de funcionar bem:
-     1. Índice em `raw_sia.producao_ambulatorial(competencia_arquivo)` —
-        sem ele, cada chunk faz full scan nos 99.9M registros (pior que
-        1 leitura só).
-     2. Confirmar se `_loaded_at` varia por competência ou é o mesmo
-        timestamp pro batch inteiro (não confirmado — query de
-        `group by competencia_arquivo, min/max(_loaded_at)` nunca
-        terminou). Se for o mesmo timestamp pra tudo, o filtro
-        `is_incremental()` atual (`_loaded_at > max(_loaded_at)`) não
-        pega os chunks seguintes sozinho — precisa de uma var de bootstrap
-        temporária (ex. `var('bootstrap_competencia')`, ativa só quando
-        `not is_incremental()`) pra popular 1 competência por vez.
-   - `dbt test` em `stg_sia__producao_ambulatorial` e
-     `fct_producao_ambulatorial` nunca rodou (bloqueado pelo build).
-   - Row count e timing reais de `fct_producao_ambulatorial` ainda não
-     confirmados nesta tabela do roadmap — atualizar quando o build
-     terminar.
-   - Sobraram 2 arquivos de scratch soltos na raiz do repo de uma sessão
-     anterior (`​.scratch_date.txt`, `.scratch_pgstat.txt`, ambos vazios) —
-     não fazem parte do projeto, podem ser apagados.
+5. ✅ `stg_sia__producao_ambulatorial` + `fct_producao_ambulatorial` —
+   concluída em 2026-07-05, numa máquina nova (setup do zero: venv,
+   `astro dev start`, collectors, dbt), que recebeu o handoff da máquina
+   anterior. Resolução dos pontos em aberto do handoff:
+   - **`_loaded_at` varia por competência**, confirmado direto no código
+     (`repository.py`: `substituir_producao_ambulatorial` gera um novo
+     `datetime.now()` a cada chamada, uma por mês) — não precisou de query
+     para confirmar.
+   - **Índice criado**: `ix_producao_ambulatorial_competencia_arquivo` em
+     `raw_sia.producao_ambulatorial(competencia_arquivo)`, adicionado em
+     `ensure_schema()` (`include/collectors/sia/repository.py`) — usado
+     tanto pelo delete+insert do collector quanto pelos chunks do dbt.
+   - **Var de bootstrap implementada**: `sia_bootstrap_competencia_arquivo`
+     em `fct_producao_ambulatorial.sql`. Quando setada, filtra
+     `stg_sia__producao_ambulatorial` por aquela competência
+     independentemente de `is_incremental()` (ao contrário da ideia
+     original do handoff de ativar só quando `not is_incremental()` — setar
+     sempre que a var existir é mais simples e previsível: cada uma das 12
+     chamadas de `dbt run` fica restrita a 1 partição, sem depender de
+     estado). Sem a var, volta ao filtro incremental normal por
+     `_loaded_at`, usado nas cargas seguintes do SIA.
+   - **Execução**: 12 chamadas de `dbt run --select fct_producao_ambulatorial
+     --vars '{sia_bootstrap_competencia_arquivo: <AAAAMM>}'`, uma por mês,
+     ~30-55s cada (~9,5 min no total) — sem o estouro de WAL que travou a
+     máquina antiga; espaço em disco ficou estável (~130GB livres o tempo
+     todo, máquina com 236GB no total).
+   - **Row count confirmado**: `fct_producao_ambulatorial` bate exatamente
+     com `raw_sia.producao_ambulatorial` — **99.927.543 linhas**.
+   - `dbt test` completo (71 testes): **70 PASS + 1 WARN esperado**
+     (`relationships_fct_producao_ambulatorial...dim_estabelecimento`,
+     mesma razão do WARN já existente em `fct_internacoes` — CNES é
+     snapshot único de dez/2025, não cobre todo `codigo_cnes` do ano
+     inteiro do SIA).
+   - Os 2 arquivos de scratch mencionados no handoff (`.scratch_date.txt`,
+     `.scratch_pgstat.txt`) não existiam nesta máquina (clone limpo do
+     git) — nada a apagar.
 6. ✅ `stg_sim__obitos` + `fct_obitos`, `stg_sinasc__nascidos_vivos` +
    `fct_nascidos_vivos`.
 7. ✅ `stg_fns__repasses` + `stg_siops__rreo_anexo14` +
@@ -191,6 +188,5 @@ cobertura.
 8. ✅ `stg_sisab__indicador_desempenho` + seed de indicadores +
    `mart_indicadores_aps`.
 
-DAGs Airflow chamando `dbt run`/`dbt test` ficam para depois da etapa 5
-(todas as fontes com pelo menos 1 model rodando local, antes de
-orquestrar).
+Todas as 8 fontes têm pelo menos 1 model rodando local — orquestração via
+DAGs Airflow chamando `dbt run`/`dbt test` é o próximo passo em aberto.

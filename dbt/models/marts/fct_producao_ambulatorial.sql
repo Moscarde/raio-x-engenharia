@@ -15,11 +15,23 @@
 -- run, só as partições com `_loaded_at` mais recente que o já
 -- materializado são apagadas e reinseridas.
 
+-- A primeira materialização não pode ler as 99.9M+ linhas de uma vez: já
+-- travou 2x numa máquina anterior por estourar o disco com WAL de uma
+-- transação única (ver ROADMAP_DBT.md, handoff da etapa 5). A var
+-- `sia_bootstrap_competencia_arquivo` permite popular 1 competência por vez
+-- (12 chamadas de `dbt run`, uma por mês) — enquanto ela estiver setada, o
+-- filtro por competência prevalece mesmo depois que a tabela já existir
+-- (is_incremental() vira true a partir da 2ª chamada). Sem a var, o model
+-- volta ao comportamento incremental normal por `_loaded_at`, usado nas
+-- cargas seguintes do SIA depois que o backfill inicial terminar.
+
 with producao as (
 
     select * from {{ ref('stg_sia__producao_ambulatorial') }}
 
-    {% if is_incremental() %}
+    {% if var('sia_bootstrap_competencia_arquivo', none) is not none %}
+    where competencia_arquivo = '{{ var("sia_bootstrap_competencia_arquivo") }}'
+    {% elif is_incremental() %}
     where _loaded_at > (select max(_loaded_at) from {{ this }})
     {% endif %}
 
