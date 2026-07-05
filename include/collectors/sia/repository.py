@@ -1,16 +1,36 @@
 """Persistência da produção ambulatorial do SIA em raw_sia.producao_ambulatorial.
 
-Estratégia de idempotência: delete + insert por partição (competência),
-não upsert por chave natural. O SIA/PA não tem um identificador único por
-linha (é produção agregada por procedimento/CBO/paciente/competência);
-"delete + insert por partição" é uma das estratégias aceitas para esse
-formato (ver CLAUDE.md, seção Idempotência).
+Estratégia de idempotência: delete + insert por partição (competência do
+ARQUIVO buscado, `competencia_arquivo`), não upsert por chave natural nem
+partição pela competência real da linha. O SIA/PA não tem um identificador
+único por linha (é produção agregada por procedimento/CBO/paciente/
+competência); "delete + insert por partição" é uma das estratégias aceitas
+para esse formato (ver CLAUDE.md, seção Idempotência).
+
+Bug real encontrado e corrigido em 2026-07-05: a versão anterior particionava
+o delete pela competência REAL de cada linha (`producao["competencia"]`,
+vindo de PA_CMP), não pelo mês do arquivo buscado. Um arquivo do SIA de uma
+competência (ex. PARJ2509) pode conter linhas de competências muito
+anteriores, processadas com atraso (confirmado contra dado real: o arquivo
+de set/2025 trouxe linhas com competência real de até out/2024). Como
+`run_producao_ambulatorial.py` processa os 12 meses em sequência dentro da
+mesma execução, cada fetch posterior que continha alguma linha retroativa
+pra uma competência já carregada por um fetch anterior **apagava o dado
+completo daquele mês e substituía só pelo pedaço retroativo do arquivo
+mais recente** — confirmado contra dado real: depois de rodar jan-set/2025
+em sequência, jan/2025 só tinha ~39 mil linhas no banco (contra os ~7,5
+milhões que o próprio fetch de janeiro relatou ter carregado), porque os
+fetches de fev-set continham pequenos trechos retroativos de janeiro e
+foram sobrescrevendo o mês inteiro a cada rodada. A partição agora é pela
+competência do arquivo buscado (UF/ano/mês passados pro fetch), que é
+exclusiva por chamada — processar os 12 meses em qualquer ordem não afeta
+mais os outros. `competencia` (a competência real de cada linha, PA_CMP)
+continua gravada para uso analítico, só não é mais a chave de partição.
 
 A tabela cobre o estado (UF) inteiro, não só o município de referência do
 MVP — client.py já decodifica o arquivo inteiro antes de qualquer filtro
 ser possível, então persistir tudo reaproveita o trabalho de decode em vez
 de descartar ~38% das linhas já processadas (ver parser.py e ROADMAP.md).
-A partição de delete é só por competência, não por competência+município.
 
 Insere em lote via COPY (não INSERT/executemany): o volume de uma única
 competência do estado inteiro já passa de milhões de linhas (medido: ~4,7
@@ -33,7 +53,12 @@ CREATE TABLE IF NOT EXISTS raw_sia.producao_ambulatorial (
     -- Cobre o estado (UF) inteiro, sem filtro de município — ver parser.py.
     cod_municipio_ibge6_estabelecimento TEXT NOT NULL,
     cod_municipio_ibge6_paciente TEXT NOT NULL,
+    -- Competência real da linha (PA_CMP) — uso analítico, não é chave de
+    -- partição (ver docstring do módulo).
     competencia TEXT NOT NULL,
+    -- Competência do arquivo buscado (ano/mês passados pro fetch, formato
+    -- "AAAAMM") — chave de partição do delete+insert.
+    competencia_arquivo TEXT NOT NULL,
     codigo_procedimento TEXT NOT NULL,
     codigo_cbo TEXT NOT NULL,
     carater_atendimento TEXT NOT NULL,
@@ -52,9 +77,9 @@ CREATE TABLE IF NOT EXISTS raw_sia.producao_ambulatorial (
 );
 """
 
-DELETE_COMPETENCIA_SQL = """
+DELETE_COMPETENCIA_ARQUIVO_SQL = """
 DELETE FROM raw_sia.producao_ambulatorial
-WHERE competencia = %(competencia)s;
+WHERE competencia_arquivo = %(competencia_arquivo)s;
 """
 
 COLUNAS_INSERT = (
@@ -62,6 +87,7 @@ COLUNAS_INSERT = (
     "cod_municipio_ibge6_estabelecimento",
     "cod_municipio_ibge6_paciente",
     "competencia",
+    "competencia_arquivo",
     "codigo_procedimento",
     "codigo_cbo",
     "carater_atendimento",
@@ -91,22 +117,26 @@ def ensure_schema(conn: psycopg.Connection) -> None:
 def substituir_producao_ambulatorial(
     conn: psycopg.Connection,
     producoes: list[dict],
+    ano_arquivo: int,
+    mes_arquivo: int,
 ) -> int:
-    """Substitui as partições (competência real) presentes no lote.
+    """Substitui a partição (competência do arquivo buscado) com o lote.
 
-    A partição apagada/substituída é a competência de cada linha
-    (`producao["competencia"]`, vindo de PA_CMP), não o mês do arquivo
-    buscado: um arquivo do SIA de uma competência (ex. STRJ2512) pode conter
-    linhas de competências anteriores, processadas com atraso (confirmado
-    contra dado real — ver limitação conhecida em
-    docs/COLLECTOR_TEMPLATE.md). Retorna a quantidade de linhas inseridas.
+    `ano_arquivo`/`mes_arquivo` são o ano/mês passados pro fetch (não a
+    competência real de cada linha) — cada chamada de fetch tem uma
+    partição exclusiva, então rodar os 12 meses em sequência não sobrescreve
+    dado de outro mês mesmo quando o arquivo buscado contém linhas
+    retroativas de competências bem anteriores. Retorna a quantidade de
+    linhas inseridas.
     """
     loaded_at = dt.datetime.now(dt.timezone.utc)
-    competencias = {p["competencia"] for p in producoes}
+    competencia_arquivo = f"{ano_arquivo}{mes_arquivo:02d}"
 
     with conn.cursor() as cur:
-        for competencia in competencias:
-            cur.execute(DELETE_COMPETENCIA_SQL, {"competencia": competencia})
+        cur.execute(
+            DELETE_COMPETENCIA_ARQUIVO_SQL,
+            {"competencia_arquivo": competencia_arquivo},
+        )
 
         with cur.copy(
             f"COPY raw_sia.producao_ambulatorial ({', '.join(COLUNAS_INSERT)}) FROM STDIN"
@@ -119,6 +149,7 @@ def substituir_producao_ambulatorial(
                         producao["cod_municipio_ibge6_estabelecimento"],
                         producao["cod_municipio_ibge6_paciente"],
                         competencia,
+                        competencia_arquivo,
                         producao["codigo_procedimento"],
                         producao["codigo_cbo"],
                         producao["carater_atendimento"],

@@ -52,7 +52,8 @@ def run() -> int:
             inicio_mes = time.monotonic()
             raw_producoes = fetch_producao_ambulatorial(UF, ANO, mes)
             producoes = parse_producoes_ambulatoriais(raw_producoes)
-            total_mes = substituir_producao_ambulatorial(conn, producoes)
+            del raw_producoes  # pico de memória: não segurar as 2 listas (~9M dicts cada em meses com muito retroativo)
+            total_mes = substituir_producao_ambulatorial(conn, producoes, ANO, mes)
             total_geral += total_mes
             logger.info(
                 "raw_sia.producao_ambulatorial: %s linhas carregadas em %.1fs "
