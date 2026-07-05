@@ -133,7 +133,33 @@ própria origem (não é falha da coleta, ver Observações pendentes).
   muito abaixo do esperado por competência — recuperado rodando de novo,
   delete+insert é idempotente); a 2ª aconteceu ainda filtrando por
   município, então a carga foi reiniciada do zero já com a mudança de
-  escopo acima. Rodar manualmente quando fizer sentido:
+  escopo acima.
+
+  Bug real encontrado em 2026-07-05 (pré-existente, não causado pela
+  mudança de escopo): o delete+insert particionava pela competência REAL
+  de cada linha (PA_CMP), não pelo mês do arquivo buscado. Um arquivo de
+  uma competência pode conter linhas retroativas de competências bem
+  anteriores (confirmado: arquivo de set/2025 trouxe linhas com
+  competência real até out/2024); como os 12 meses são processados em
+  sequência na mesma execução, um fetch posterior com qualquer linha
+  retroativa apagava o mês inteiro já carregado e substituía só pelo
+  pedaço retroativo — confirmado: depois de rodar jan-set/2025, jan/2025
+  ficou com ~39 mil linhas em vez das ~7,5 milhões que o próprio fetch de
+  janeiro relatou. Corrigido: partição agora é por `competencia_arquivo`
+  (ano/mês do fetch), exclusiva por chamada, não mais pela competência
+  real. Ver commit do fix.
+
+  A mesma rodada também foi morta pelo **OOM killer** no meio do mês 9
+  (confirmado via `dmesg`, não foi queda de energia desta vez) — a máquina
+  já estava com pouca memória livre (~4,7GB) e o volume do estado inteiro
+  (~9M linhas em alguns meses) mais que dobrou o pico de RAM comparado ao
+  escopo só-Rio. Mitigado parcialmente: `run()` não segura mais as listas
+  bruta e parseada ao mesmo tempo. Risco de OOM permanece real pra meses
+  com volume retroativo grande; acompanhar `free -h` durante a carga.
+
+  Tabela foi derrubada e recriada (schema novo com `competencia_arquivo`,
+  dado anterior já estava incorreto de qualquer forma) antes de reiniciar
+  a carga pela 4ª vez. Rodar manualmente quando fizer sentido:
   `python -m include.collectors.sia.run_producao_ambulatorial`. Estimativa
   de 1,5-2h de execução (pode aumentar por carregar o estado inteiro em
   vez de só Rio).
