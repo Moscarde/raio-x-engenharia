@@ -52,6 +52,12 @@ primeira implementação, restringir a coleta a um município de referência
 (Rio de Janeiro, id_municipio 3304557) e ao ano de 2025. Ver detalhes em
 [docs/fontes.md](fontes.md#escopo-de-volume-para-o-mvp).
 
+Exceção: **SIA** carrega o estado (UF) inteiro desde 2026-07-04, não só o
+município de referência — o cliente já decodifica o arquivo inteiro antes
+de qualquer filtro ser possível, então persistir tudo reaproveita esse
+custo de CPU já pago em vez de descartar a maior parte das linhas
+decodificadas. Ver ROADMAP.md.
+
 ## Limitações conhecidas da fonte
 
 Quirks reais de dados descobertos ao testar contra a fonte de verdade (não

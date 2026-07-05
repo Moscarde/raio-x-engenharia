@@ -8,7 +8,7 @@ a seguir em novos collectors: [docs/COLLECTOR_TEMPLATE.md](docs/COLLECTOR_TEMPLA
 | --- | --- | --- | --- |
 | IBGE | ✅ collector pronto | `raw_ibge` | Municípios (hierarquia territorial) |
 | CNES | ✅ collector pronto | `raw_cnes` | Estabelecimentos de saúde |
-| SIA | ✅ collector pronto | `raw_sia` | Produção ambulatorial |
+| SIA | ✅ collector pronto | `raw_sia` | Produção ambulatorial (RJ inteiro, não só Rio) |
 | SIH | ✅ collector pronto | `raw_sih` | Internações |
 | SISAB | ✅ collector pronto | `raw_sisab` | Indicadores de atenção básica |
 | FNS | ✅ collector pronto | `raw_fns` | Repasses/financiamento |
@@ -45,7 +45,7 @@ própria origem (não é falha da coleta, ver Observações pendentes).
 | --- | --- | --- | --- |
 | IBGE | cadastro corrente (sem recorte de ano) | 5.571 municípios | N/A — não é escopo anual |
 | CNES | 2025-12 (1 competência; cadastro é snapshot, basta 1 mês) | 17.380 | ✅ sim |
-| SIA | 2025-09 a 2025-12 (4 de 12 meses) | 4.838.829 | ❌ **não** — faltam jan-ago/2025; carga completa iniciada em 2026-07-04 em background (~1,5-2h), ver Observações pendentes |
+| SIA | recarregando (estado inteiro, não só Rio — mudança de escopo em 2026-07-04) | em andamento | ⏳ recarga em progresso, ver Observações pendentes |
 | SIH | 2025, 12 competências | 352.790 | ✅ sim |
 | FNS | 2025, ano completo (1 chamada de API) | 23 | ✅ sim |
 | SIOPS | 2025, bimestre 6 (fechamento, valores cumulativos) | 80 | ✅ sim |
@@ -112,9 +112,28 @@ própria origem (não é falha da coleta, ver Observações pendentes).
   Postgres local (Rio de Janeiro, 2024Q3: 18 linhas — 6 tipos de indicador
   x 3 visões de equipe), idempotente em 2 execuções seguidas (delete +
   insert por partição município+quadrimestre).
-- **SIA**: `run_producao_ambulatorial.py` já loopa as 12 competências de 2025
-  (escopo aprovado), mas só foi executado de ponta a ponta para 1 mês
-  (dez/2025, validado e idempotente). A carga do ano completo (12 meses,
-  ~2-3 arquivos de 100-180MB cada) ainda não rodou neste ambiente — estimativa
-  de 1,5-2h de execução. Rodar manualmente quando fizer sentido:
-  `python -m include.collectors.sia.run_producao_ambulatorial`.
+- **SIA**: mudança de escopo em 2026-07-04 — o collector passou a carregar
+  o **estado (UF) inteiro**, não só o município de referência (Rio).
+  Motivo: perfilamento real mostrou que `client.py` já decodifica
+  (`to_dict`) o arquivo inteiro antes de qualquer filtro por município ser
+  possível (formato DBC não permite leitura parcial); filtrar por
+  município acontecia só depois, no parser, descartando ~38% das linhas
+  já decodificadas sem nunca persisti-las (medido: Rio é 62% do estado,
+  arquivo de nov/2025). Sem ganho de tempo real em manter o filtro, e
+  fechava a porta pra outros municípios do RJ no futuro — decisão de
+  guardar o estado inteiro (`parser.py`/`repository.py` atualizados,
+  partição de delete+insert agora é só por competência, não mais
+  competência+município). Volume sobe de ~56M para ~90M linhas/ano.
+  Detalhes do perfilamento (tempo gasto em download/decompressão/leitura/
+  conversão) ficaram só no histórico da conversa, não documentados em
+  arquivo — a decisão e o resultado é o que importa daqui pra frente.
+
+  Duas quedas de energia atrapalharam a carga completa nesta sessão: a
+  1ª corrompeu dados parciais no Postgres (raw_sia ficou com contagens
+  muito abaixo do esperado por competência — recuperado rodando de novo,
+  delete+insert é idempotente); a 2ª aconteceu ainda filtrando por
+  município, então a carga foi reiniciada do zero já com a mudança de
+  escopo acima. Rodar manualmente quando fizer sentido:
+  `python -m include.collectors.sia.run_producao_ambulatorial`. Estimativa
+  de 1,5-2h de execução (pode aumentar por carregar o estado inteiro em
+  vez de só Rio).

@@ -45,3 +45,13 @@ anuais consolidadas com atraso de publicação — 2025 não está disponível n
 FTP do DATASUS para nenhuma das duas. Usam o último ano realmente publicado
 no momento da implementação: SIM ano 2024, SINASC ano 2022. Ver
 [docs/COLLECTOR_TEMPLATE.md](COLLECTOR_TEMPLATE.md) para detalhes.
+
+Segunda exceção, de decisão explícita (não de limitação da fonte): **SIA**
+carrega o **estado (UF) inteiro**, não só o município de referência.
+Motivo: `client.py` já decodifica o arquivo DBC inteiro (`to_dict`) antes
+de qualquer filtro por município ser possível — o custo de CPU é pago de
+qualquer forma, então filtrar por município antes do INSERT só descartava
+~38% das linhas já decodificadas (medido: Rio é 62% do estado num arquivo
+de nov/2025), sem ganho de tempo real e fechando a porta pra outros
+municípios do RJ no futuro. Volume sobe de ~56M para ~90M linhas/ano; ver
+ROADMAP.md.
