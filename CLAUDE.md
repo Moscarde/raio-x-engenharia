@@ -12,22 +12,23 @@ O projeto deve priorizar simplicidade, rastreabilidade, modularidade e clareza a
 
 Este repositório é um projeto Astro com Airflow local.
 
-O banco PostgreSQL local do Astro será usado como banco principal durante o MVP.
+O banco de produção é um PostgreSQL externo, independente do stack do Astro
+(hospedado em nuvem). O Postgres local do Astro fica restrito aos metadados
+internos do Airflow — collectors, dbt e testes de conexão sempre apontam
+para o Postgres externo via `POSTGRES_*` do `.env` (ver `.env.example`).
 
-Serviços esperados em ambiente local:
+Serviços esperados:
 
 ```text
 Airflow UI:
 http://raio-x-engenharia.localhost:6563
 
-Postgres:
-postgresql://localhost:5432/postgres
-
-Credenciais padrão locais:
-postgres:postgres
+Postgres (produção, externo):
+host/porta/usuário/senha em POSTGRES_* — ver .env local, nunca commitar
+valores reais.
 ```
 
-Não assumir infraestrutura externa sem solicitação explícita.
+Não assumir infraestrutura externa adicional sem solicitação explícita.
 
 ---
 
