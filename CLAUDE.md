@@ -12,7 +12,9 @@ O projeto deve priorizar simplicidade, rastreabilidade, modularidade e clareza a
 
 Este repositório é um projeto Astro com Airflow local.
 
-O banco PostgreSQL local do Astro será usado como banco principal durante o MVP.
+O PostgreSQL de serving é externo ao stack Astro e é configurado por
+`POSTGRES_*`. O PostgreSQL interno do Astro armazena apenas metadados do
+Airflow durante o desenvolvimento.
 
 Serviços esperados em ambiente local:
 

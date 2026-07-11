@@ -133,7 +133,8 @@ onde são tratados, e resumidos aqui:
   IBGE (confirmado: CNPJ `42498733000148` = "MUNICIPIO DE RIO DE JANEIRO"
   na API); o de-para CNPJ -> id_municipio fica para staging/dbt. Volume real
   é baixo (23 lançamentos em 2025, confirmado rodando
-  `run_repasses.py` de ponta a ponta contra o Postgres local, upsert
+  `run_repasses.py` de ponta a ponta contra o PostgreSQL externo configurado,
+  upsert
   idempotente em 2 execuções) porque a API cobre só os lançamentos do
   "Programa Ágil" (código 140), não o histórico completo de repasses SUS.
 - **SIM** e **SINASC**: mesma classe de problema do catálogo do pysus (SIA/

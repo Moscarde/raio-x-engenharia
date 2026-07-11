@@ -4,6 +4,11 @@
 requests
 psycopg[binary]
 python-dotenv
+# Persistência do lake: boto3 publica objetos no MinIO e pyarrow produz os
+# arquivos Parquet. Ambos já são dependências transitivas do pysus, mas são
+# declarados aqui porque o projeto agora os importa diretamente.
+boto3
+pyarrow
 
 # CNES (e outras fontes DATASUS: SIA, SIH, SIM, SINASC) distribuem dados em
 # DBC, formato binário proprietário sobre DBF. pysus resolve download FTP +

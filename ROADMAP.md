@@ -26,12 +26,12 @@ rodaram com sucesso; SIA não foi rodado dentro da DAG por levar ~1,5-2h,
 mas a lógica do collector já foi validada fora do Airflow (ver observação
 abaixo).
 
-`docker-compose.override.yml` sobrescreve `POSTGRES_HOST`/`POSTGRES_PORT`
-só no container do `scheduler` (LocalExecutor, onde as tasks rodam de
-fato): o `.env` do projeto aponta para `localhost`, correto para rodar um
-collector via `python -m ...` no host, mas errado de dentro da rede docker
-do Airflow, onde o Postgres é alcançável pelo hostname de serviço
-`postgres`. Exige `astro dev restart` para aplicar.
+`docker-compose.override.yml` conecta o `scheduler` (LocalExecutor, onde as
+tasks rodam) à rede `raio-x-data` do MinIO. O banco analítico é externo ao
+Astro e vem do `.env`: processos no host usam `POSTGRES_HOST=localhost`, e o
+scheduler o troca pelo gateway Docker para alcançar a porta publicada pelo
+serviço externo. Exige `astro dev restart` para aplicar mudanças de ambiente
+ou rede.
 
 ## Status de carga de dados (escopo MVP: Rio de Janeiro + Paraty + Nova Iguaçu)
 

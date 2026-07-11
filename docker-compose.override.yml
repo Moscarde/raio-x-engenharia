@@ -1,12 +1,24 @@
-# Sobrescreve, só para o container do scheduler (onde as tasks das DAGs
-# rodam, LocalExecutor), as variáveis POSTGRES_HOST/POSTGRES_PORT que o
-# Astro CLI injeta a partir do .env. O .env é pensado para execução manual
-# fora do container (collector rodado via `python -m ...` do host, onde o
-# Postgres está em localhost:<porta publicada>); dentro da rede docker do
-# Airflow, o Postgres é alcançável pelo hostname de serviço "postgres" na
-# porta interna 5432. Ver docs/COLLECTOR_TEMPLATE.md e CLAUDE.md.
+# O PostgreSQL de serving roda em outro Compose no host. Processos do host usam
+# POSTGRES_HOST=localhost; o scheduler usa o gateway Docker para alcançar a
+# porta publicada desse serviço. A rede raio-x-data adiciona somente o MinIO.
 services:
   scheduler:
     environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
+      - POSTGRES_HOST=host.docker.internal
+      - OBJECT_STORAGE_ENDPOINT
+      - OBJECT_STORAGE_REGION
+      - OBJECT_STORAGE_SECURE
+      - OBJECT_STORAGE_LANDING_BUCKET
+      - OBJECT_STORAGE_LAKE_BUCKET
+      - OBJECT_STORAGE_ARTIFACTS_BUCKET
+      - OBJECT_STORAGE_ACCESS_KEY
+      - OBJECT_STORAGE_SECRET_KEY
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - default
+      - raio-x-data
+
+networks:
+  raio-x-data:
+    external: true
