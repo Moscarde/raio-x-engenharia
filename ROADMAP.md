@@ -70,6 +70,36 @@ Quebra por município (raw, 2026-07-05):
 | FNS | 23 | 12 | 236 |
 | SIOPS | 80 | 54 | 57 |
 
+## Demandas de dados do frontend
+
+Demandas registradas pelo projeto `raio-x-front` para completar os dashboards
+municipais. Elas fazem parte do escopo deste pipeline: cada demanda deve ser
+atendida por uma nova coleta, pela ampliação de uma fonte já coletada, ou pela
+modelagem dbt sobre dados já disponíveis. Para as demandas sem fonte definida,
+este projeto deve identificar uma fonte pública oficial, registrar a decisão em
+`docs/fontes.md` e implementar o collector, a rastreabilidade raw e os modelos
+analíticos necessários para consumo do frontend.
+
+| Demanda | Dado/modelo analítico necessário | Entrega hoje bloqueada no frontend |
+| --- | --- | --- |
+| Cobertura APS e equipes ESF | Indicadores municipais de cobertura APS, quantitativo e situação de equipes ESF e população total municipal de referência | KPIs de cobertura APS e equipes ESF, comparações per capita e pareamento por porte populacional |
+| Metas de APS | Metas ou limiares oficiais por indicador e período, com regra de interpretação | Status “meta ok”, “atenção” e “crítico” dos indicadores APS |
+| Internações ICSAP | Classificação de diagnósticos de internação em condição sensível à atenção primária | Percentual de internações ICSAP no resumo municipal e no comparador |
+| Alertas priorizados | Mart de alertas com regra, severidade, entidade afetada, evidência, período e status | Lista, badge e filtros de alertas; diagnóstico executivo de riscos |
+| Histórico de rede CNES | Série histórica de estabelecimentos com situação operacional e competência de referência | Auditoria de unidades desatualizadas, abertura/fechamento e evolução da rede |
+| Detalhamento da APS | Indicadores em grão de equipe e unidade, quando aplicável | Radar APS por equipe/unidade, busca ativa e identificação de desempenho localizado |
+| Produção por grupo | Mart de produção por município, competência e grupo de procedimento, com descrições legíveis dos grupos/procedimentos | Análise de produção por grupo compreensível e performática, sem agregação da fato detalhada em tempo de request |
+| Comparação entre pares | Atributos para definir pares municipais, incluindo população e porte de rede, e indicadores comparáveis para um universo suficiente de municípios | Ranking, pareamento por perfil e insights comparativos além da comparação direta entre os três municípios atuais |
+| Séries temporais consistentes | Disponibilidade temporal harmonizada ou metadados claros de vigência e comparabilidade entre domínios | Filtros de período amplos e análises integradas de tendência entre rede, produção, APS, internações, óbitos e nascimentos |
+| Rede CNES detalhada | Identificação legível da unidade, atributos de rede e dicionários completos de códigos | Auditoria operacional detalhada e leitura confiável de tipo/natureza dos estabelecimentos |
+| Financiamento municipal completo | Visão analítica de transferências e financiamento com escopo e semântica consolidados | Painel financeiro municipal completo, sem risco de interpretar recortes como total de recursos SUS |
+
+Não fazem parte deste roadmap: implementação de relatórios com IA, exportação
+em PDF/apresentação, interações de interface e decisões de arquitetura do
+frontend. O frontend consome as relações analíticas publicadas por este
+pipeline; limitações de cobertura e período devem permanecer documentadas nos
+collectors e modelos correspondentes.
+
 ## Observações pendentes
 
 - **Expansão para Paraty e Nova Iguaçu (2026-07-05)**: escopo do MVP saiu
