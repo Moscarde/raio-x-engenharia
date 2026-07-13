@@ -260,3 +260,44 @@ models:
       - name: percentual_icsap
         data_tests:
           - not_null
+
+  - name: mart_alertas_saude
+    description: >
+      Alertas priorizados por regra, sobre marts já existentes. Só regras
+      com limiar legal já codificado (SIOPS/LC 141/2012) ou sinal
+      estrutural sem limiar (encerramento de unidade, saldo financeiro
+      negativo) — sem regras de meta de indicador (ver comentário no
+      `.sql` e ROADMAP.md "Alertas priorizados"). `status` sempre "ativo":
+      mart full-refresh sem histórico de execuções persistido.
+    columns:
+      - name: id_alerta
+        description: Chave surrogate (regra + município + período).
+        data_tests:
+          - unique
+          - not_null
+      - name: codigo_regra
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - siops_abaixo_minimo_constitucional
+                  - rede_cnes_possivel_encerramento
+                  - financiamento_liquido_negativo
+      - name: severidade
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [alta, media, baixa]
+      - name: id_municipio
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [ativo]
