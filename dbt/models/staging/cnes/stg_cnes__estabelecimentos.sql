@@ -19,6 +19,11 @@ tipo_unidade as (
 estabelecimentos_tipados as (
 
     select
+        -- Chave do model: codigo_cnes sozinho não é mais único desde que
+        -- o raw passou a ter 1 linha por competência (ver ROADMAP.md
+        -- "Histórico de rede CNES") — grão agora é estabelecimento +
+        -- competência.
+        e.codigo_cnes || '-' || e.competencia as id_estabelecimento_competencia,
         e.codigo_cnes,
         e.cod_municipio_ibge6,
 

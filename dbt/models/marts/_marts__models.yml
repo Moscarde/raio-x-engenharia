@@ -11,7 +11,12 @@ models:
           - not_null
 
   - name: dim_estabelecimento
-    description: Dimensão de estabelecimentos de saúde do CNES.
+    description: >
+      Dimensão de estabelecimentos de saúde do CNES. `nome_fantasia`,
+      endereço, geolocalização e `descricao_esfera_administrativa` vêm do
+      DEMAS (stg_cnes__estabelecimentos_detalhados) — podem ser `NULL`
+      quando o estabelecimento não está nesse cadastro complementar (ver
+      ROADMAP.md "Rede CNES detalhada"), por isso sem teste `not_null`.
     columns:
       - name: codigo_cnes
         description: Código CNES do estabelecimento. Chave da dimensão.
@@ -143,3 +148,46 @@ models:
       - name: numero_indicador
         data_tests:
           - not_null
+
+  - name: mart_cobertura_aps_municipio
+    description: >
+      Cobertura de APS e equipes ESF por município — consolida população
+      estimada (IBGE), equipes de APS ativas (CNES) e cobertura vinculada
+      do Previne Brasil (SISAB/DEMAS). Cada fonte preserva sua própria
+      competência; ver ROADMAP.md "Cobertura APS e equipes ESF".
+    columns:
+      - name: id_municipio
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+      - name: populacao_estimada
+        data_tests:
+          - not_null
+
+  - name: mart_historico_rede_cnes
+    description: >
+      Série histórica de estabelecimentos do CNES (12 competências de
+      2025) com situação operacional derivada (ativo/possivelmente
+      encerrado/histórico). Complementa dim_estabelecimento, que só expõe
+      o estado mais recente. Ver ROADMAP.md "Histórico de rede CNES".
+    columns:
+      - name: id_estabelecimento_competencia
+        data_tests:
+          - unique
+          - not_null
+      - name: situacao_operacional
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [ativo, possivelmente_encerrado, historico]
+      - name: id_municipio
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio

@@ -13,3 +13,12 @@ sources:
             data_tests:
               - unique
               - not_null
+      - name: populacao_estimada
+        description: >
+          1 linha por município + ano (agregado 6579/SIDRA, municípios de
+          referência do MVP, ano 2025 — ver ROADMAP.md).
+        columns:
+          - name: id_municipio
+            description: Código IBGE completo (7 dígitos).
+            data_tests:
+              - not_null

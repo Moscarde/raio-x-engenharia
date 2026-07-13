@@ -6,10 +6,37 @@ sources:
     description: Estabelecimentos de saúde do CNES, carregados por include/collectors/cnes.
     tables:
       - name: estabelecimentos
-        description: 1 linha por estabelecimento (grupo ST, competência 2025-12 — cadastro é snapshot, 1 competência já retrata o período).
+        description: >
+          1 linha por estabelecimento + competência (grupo ST, os 12 meses
+          de 2025 — série histórica desde 2026-07-12, ver ROADMAP.md
+          "Histórico de rede CNES"). Chave real é (codigo_cnes, competencia),
+          já garantida como PRIMARY KEY pelo Postgres; não repetida aqui
+          como teste dbt para não duplicar a garantia.
         columns:
           - name: codigo_cnes
-            description: Código CNES do estabelecimento.
+            description: Código CNES do estabelecimento. Repete entre competências.
+            data_tests:
+              - not_null
+      - name: equipes_aps
+        description: >
+          1 linha por equipe de APS (grupo EP, tipos eSF/eCR/eAPP/eAP),
+          competência 2025-12 (snapshot único, não historizado como
+          estabelecimentos — ver ROADMAP.md "Cobertura APS e equipes ESF").
+        columns:
+          - name: id_equipe
+            description: Identificador da equipe, estável entre competências.
+            data_tests:
+              - unique
+              - not_null
+      - name: estabelecimentos_detalhados
+        description: >
+          1 linha por estabelecimento (cadastro "vivo" do DEMAS, sem
+          competência — upsert sobrescreve o estado mais recente). Nome,
+          endereço, geolocalização e esfera administrativa decodificada,
+          complementando raw_cnes.estabelecimentos (grupo "ST" do FTP, sem
+          nome/endereço). Ver ROADMAP.md "Rede CNES detalhada".
+        columns:
+          - name: codigo_cnes
             data_tests:
               - unique
               - not_null

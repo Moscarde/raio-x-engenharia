@@ -7,3 +7,9 @@ sources:
     tables:
       - name: indicador_desempenho
         description: 1 linha por indicador x visão de equipe (2024Q3 — série descontinuada, ver ROADMAP.md).
+      - name: cadastro_vinculado
+        description: >
+          1 linha por tipo de equipe x situação x critério de ponderação
+          (competência 202412 — mesma extinção do Previne Brasil do
+          indicador_desempenho, ver ROADMAP.md). Traz população vinculada
+          por equipe e a estimativa populacional do IBGE já embutida.

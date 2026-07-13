@@ -2,12 +2,22 @@ version: 2
 
 models:
   - name: stg_cnes__estabelecimentos
-    description: Estabelecimentos do CNES, tipados e com de-para de códigos aplicado.
+    description: >
+      Estabelecimentos do CNES, tipados e com de-para de códigos aplicado.
+      Série histórica: 1 linha por estabelecimento + competência (ver
+      ROADMAP.md "Histórico de rede CNES"), não mais 1 por estabelecimento.
     columns:
-      - name: codigo_cnes
-        description: Código CNES do estabelecimento. Chave do model.
+      - name: id_estabelecimento_competencia
+        description: >
+          Chave do model (codigo_cnes + competencia concatenados). Para o
+          estabelecimento "atual" (1 linha por codigo_cnes), ver
+          dim_estabelecimento.
         data_tests:
           - unique
+          - not_null
+      - name: codigo_cnes
+        description: Código CNES do estabelecimento. Repete entre competências.
+        data_tests:
           - not_null
       - name: tipo_pessoa
         data_tests:
@@ -35,3 +45,37 @@ models:
           - accepted_values:
               arguments:
                 values: [municipal, estadual, dupla, sem_gestao, nao_informado]
+
+  - name: stg_cnes__equipes_aps
+    description: Equipes de APS do CNES (grupo EP), tipadas, com sigla e situação decodificadas.
+    columns:
+      - name: id_equipe
+        data_tests:
+          - unique
+          - not_null
+      - name: sigla_equipe
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [eSF, eCR, eAPP, eAP]
+      - name: situacao_equipe
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [ativa, desativada]
+      - name: cod_municipio_ibge6
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('int_ibge__municipio_codigo6')
+                field: cod_municipio_ibge6
+
+  - name: stg_cnes__estabelecimentos_detalhados
+    description: >
+      Estabelecimentos do CNES via DEMAS — nome, endereço, geolocalização
+      e esfera administrativa decodificada. Cadastro vivo, sem competência.
+    columns:
+      - name: codigo_cnes
+        data_tests:
+          - unique
+          - not_null

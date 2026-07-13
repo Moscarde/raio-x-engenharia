@@ -13,3 +13,23 @@ models:
               arguments:
                 to: ref('int_ibge__municipio_codigo6')
                 field: cod_municipio_ibge6
+
+  - name: stg_sisab__cadastro_vinculado
+    description: Cadastro vinculado do Previne Brasil (população por tipo/situação de equipe), tipado.
+    columns:
+      - name: sigla_equipe
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [eSF, eAP, eAPP, eCR]
+      - name: situacao_equipe
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [válidas, homologadas, todas]
+      - name: codigo_municipio_ibge
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('int_ibge__municipio_codigo6')
+                field: cod_municipio_ibge6
