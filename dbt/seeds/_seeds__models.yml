@@ -144,3 +144,26 @@ seeds:
       - name: cid_fim
         data_tests:
           - not_null
+
+  - name: seed_sigtap_grupo
+    description: >
+      De-para do "grupo" (2 primeiros dígitos do código de 10 dígitos do
+      SIGTAP, `codigo_procedimento` em `fct_producao_ambulatorial`) para
+      descrição legível. Fonte: wiki oficial do Ministério da Saúde
+      (wiki.saude.gov.br/sigtap/index.php/Grupo), consultada em 2026-07-13,
+      cruzada contra o "ANEXO I — Estrutura da Tabela de Procedimentos
+      Medicamentos OPM do SUS" (cosemssc.org.br/wp-content/uploads/2025/03/tabela-do-sigtap.pdf),
+      mesma data — os 2 documentos batem nos grupos 01-08; o grupo 09
+      ("Procedimentos para oferta de cuidados integrados") só aparece na
+      wiki (mais recente que o PDF), confirmado contra dado real
+      (`raw_sia.producao_ambulatorial` tem 88.209 linhas com código
+      iniciando em "09"). Cobertura: 9 de 9 grupos — domínio fechado de 1
+      dígito, todos os códigos observados no dado real (01 a 09) cobertos.
+    columns:
+      - name: codigo_grupo
+        data_tests:
+          - unique
+          - not_null
+      - name: descricao_grupo
+        data_tests:
+          - not_null

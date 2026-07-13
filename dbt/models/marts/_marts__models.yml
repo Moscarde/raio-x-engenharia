@@ -215,6 +215,30 @@ models:
         data_tests:
           - not_null
 
+  - name: mart_producao_grupo_municipio
+    description: >
+      Produção ambulatorial do SIA agregada por município (do
+      estabelecimento), competência e grupo SIGTAP (2 primeiros dígitos do
+      código de 10 dígitos, via seed_sigtap_grupo). Ver ROADMAP.md
+      "Produção por grupo".
+    columns:
+      - name: id_municipio
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+      - name: competencia_date
+        data_tests:
+          - not_null
+      - name: codigo_grupo
+        data_tests:
+          - not_null
+      - name: descricao_grupo
+        data_tests:
+          - not_null
+
   - name: mart_icsap_municipio
     description: >
       Percentual de Internações por Condições Sensíveis à Atenção Primária
