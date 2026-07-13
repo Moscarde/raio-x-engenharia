@@ -191,3 +191,26 @@ models:
               arguments:
                 to: ref('dim_municipio')
                 field: id_municipio
+
+  - name: mart_financiamento_saude_uniao
+    description: >
+      União normalizada de FNS Fundo a Fundo e Portal da Transparência
+      (mesma unidade R$, valor líquido com sinal). Não é o total de
+      recursos SUS do município — só os canais que as duas APIs federais
+      expõem. Ver ROADMAP.md "Financiamento municipal completo".
+    columns:
+      - name: fonte
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [fns_fundo_a_fundo, portal_transparencia]
+      - name: id_municipio
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+      - name: valor
+        data_tests:
+          - not_null

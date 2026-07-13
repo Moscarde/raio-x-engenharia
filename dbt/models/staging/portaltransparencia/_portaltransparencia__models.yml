@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: stg_portaltransparencia__recursos_recebidos
+    description: Recursos recebidos do Ministério da Saúde pelo ente municipal, tipados.
+    columns:
+      - name: cnpj_favorecido
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('seed_fns_ente_municipio')
+                field: cnpj_ente
+      - name: valor
+        data_tests:
+          - not_null

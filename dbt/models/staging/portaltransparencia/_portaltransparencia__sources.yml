@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: raw_portaltransparencia
+    schema: raw_portaltransparencia
+    description: >
+      Recursos recebidos por favorecido (API do Portal da Transparência),
+      carregados por include/collectors/portaltransparencia.
+    tables:
+      - name: recursos_recebidos_saude
+        description: >
+          1 linha por lançamento de recurso recebido do Ministério da
+          Saúde pelo CNPJ do ente municipal, ano 2025 (ver ROADMAP.md
+          "Financiamento municipal completo"). Sem identificador de linha
+          estável na fonte.
+        columns:
+          - name: cnpj_favorecido
+            description: CNPJ do ente municipal favorecido, só dígitos.
+            data_tests:
+              - not_null
