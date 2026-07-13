@@ -8,14 +8,18 @@ A rota definitiva, campos e regras de parsing devem ser confirmados dentro de ca
 | Fonte               | Rota/base inicial                                                                                       | Formato esperado           | Observação                                                                          |
 | ------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------- |
 | IBGE                | `https://servicodados.ibge.gov.br/api/v1/localidades/municipios`                                        | JSON                       | Municípios e hierarquia territorial.                                                |
+| IBGE / população    | `https://servicodados.ibge.gov.br/api/v3/agregados/6579/periodos/-1/variaveis/9324`                     | JSON (API agregados/SIDRA) | ✅ Estimativas da população residente por município (agregado 6579, referência 1º de julho); ver ROADMAP.md. |
 | CNES                | `ftp://ftp.datasus.gov.br/dissemin/publicos/CNES/200508_/Dados/`                                        | DBC/DBF                    | Arquivos dissemináveis do CNES.                                                     |
 | SIA                 | `ftp://ftp.datasus.gov.br/dissemin/publicos/SIASUS/200801_/Dados/`                                      | DBC                        | Produção ambulatorial a partir de 2008.                                             |
 | SIH                 | `ftp://ftp.datasus.gov.br/dissemin/publicos/SIHSUS/200801_/Dados/`                                      | DBC                        | Produção hospitalar a partir de 2008.                                               |
 | SISAB               | `https://sisab.saude.gov.br/paginas/acessoRestrito/relatorio/federal/indicadores/indicadorPainel.xhtml` | CSV/Excel/ODS via download | ❌ Rota original. Painel exige navegação restrita/sessão, sem download simples via API/FTP. |
 | SISAB FTP           | `ftp://ftp.datasus.gov.br/dissemin/publicos/CMD/DadosSISAB/`                                            | a validar                  | ❌ Rota candidata. Diretório `Dados` vazio no FTP.                                  |
 | SISAB / DEMAS       | `https://apidadosabertos.saude.gov.br/atencao-primaria/indicador-desempenho-programa-previne-brasil`   | JSON (API DEMAS)           | ✅ Rota efetiva encontrada depois das duas acima falharem. API REST pública sem autenticação; ver ROADMAP.md. |
+| SISAB / DEMAS cadastro vinculado | `https://apidadosabertos.saude.gov.br/atencao-primaria/cadastro-vinculado-programa-previne-brasil` | JSON (API DEMAS) | ✅ Mesma API do indicador de desempenho, endpoint diferente. Dá população IBGE embutida + pessoas vinculadas por tipo/situação de equipe (eSF/eAP/eAPP/eCR) — base de cobertura de APS/equipes ESF; ver ROADMAP.md. |
+| CNES / equipes de APS | `ftp://ftp.datasus.gov.br/dissemin/publicos/CNES/200508_/Dados/` (grupo "EP") | DBC/DBF | ✅ Mesmo FTP do grupo "ST" (Estabelecimentos), grupo diferente. Cadastro/situação de equipes por competência (IDEQUIPE, tipo, ativação/desativação); ver ROADMAP.md e docs/COLLECTOR_TEMPLATE.md. |
 | FNS                 | `https://consultafns.saude.gov.br/`                                                                     | HTML/API interna a validar | Consulta pública de repasses do FNS.                                                |
 | FNS / Fundo a Fundo | `https://docs.api.transferegov.gestao.gov.br/fundoafundo/`                                              | API JSON                   | API documentada para transferências fundo a fundo. Avaliar aderência ao escopo FNS. |
+| Financiamento completo / Portal da Transparência | `https://api.portaldatransparencia.gov.br/api-de-dados/despesas/recursos-recebidos` | JSON (API, exige chave) | ✅ Única fonte deste projeto que exige autenticação (chave pessoal gratuita via cadastro de e-mail). Complementa o FNS Fundo a Fundo (recorte estreito) com recursos recebidos pelo CNPJ do município, de qualquer unidade vinculada ao Ministério da Saúde; ver ROADMAP.md e docs/COLLECTOR_TEMPLATE.md. |
 | SIOPS               | `https://siops.datasus.gov.br/`                                                                         | HTML/downloads a validar   | ❌ Rota original. Relatório de cálculo do % de saúde (`carregarDadosLC141.php`) tem bug real: respostas de 300+MB com valores zerados. |
 | SIOPS / SICONFI     | `https://apidatalake.tesouro.gov.br/ords/cdwhprd/siconfi/tt/rreo`                                       | JSON (API SICONFI)         | ✅ Rota efetiva encontrada depois da rota acima falhar. API REST pública sem autenticação (Tesouro Nacional); ver ROADMAP.md. |
 | SIM                 | `ftp://ftp.datasus.gov.br/dissemin/publicos/SIM/CID10/DORES/`                                           | DBC                        | Óbitos por residência.                                                              |
@@ -55,6 +59,15 @@ em cada `parser.py`):
 
 Ampliar para outros municípios/anos além destes 3 é decisão explícita de
 uma etapa futura, não do MVP inicial.
+
+**Exceção confirmada (2026-07-13)**: a demanda "Comparação entre pares"
+(ver ROADMAP.md) expandiu 2 fontes pro RJ inteiro (92 municípios,
+confirmado explicitamente com o usuário) — só população estimada do IBGE
+(`run_populacao_estimada_rj.py`) e porte de rede do CNES (contagem de
+estabelecimentos, `run_rede_porte_municipio.py`, `raw_cnes.rede_porte_municipio`).
+As demais fontes (SIH, SIM, SINASC, SISAB, SIOPS, FNS, Portal da
+Transparência, e a coleta detalhada de estabelecimentos/equipes do CNES)
+seguem restritas aos 3 municípios de referência.
 
 Exceção confirmada: **SIM** (óbitos) e **SINASC** (nascidos vivos) são bases
 anuais consolidadas com atraso de publicação — 2025 não está disponível no
