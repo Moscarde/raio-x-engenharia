@@ -79,3 +79,13 @@ models:
         data_tests:
           - unique
           - not_null
+
+  - name: stg_cnes__rede_porte_municipio
+    description: >
+      Contagem de estabelecimentos do CNES por município do RJ inteiro
+      (não filtrado aos 3 de referência) — atributo de porte de rede pra
+      "Comparação entre pares".
+    columns:
+      - name: cod_municipio_ibge6
+        data_tests:
+          - not_null

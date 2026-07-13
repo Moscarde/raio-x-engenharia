@@ -302,6 +302,27 @@ models:
               arguments:
                 values: [ativo]
 
+  - name: mart_comparacao_municipios_rj
+    description: >
+      Universo de comparação/pareamento municipal — 1 linha por município
+      do RJ inteiro (92), não só os 3 de referência (`municipio_referencia`
+      marca quais são). Só população (IBGE) e porte de rede (contagem de
+      estabelecimentos do CNES); sem indicador de desempenho, ainda
+      coletado só pros 3 municípios. Ver ROADMAP.md "Comparação entre
+      pares".
+    columns:
+      - name: id_municipio
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+      - name: populacao_estimada
+        data_tests:
+          - not_null
+
   - name: mart_equipe_aps_detalhada
     description: >
       Detalhamento da APS em grão de equipe/unidade — 1 linha por equipe

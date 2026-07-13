@@ -40,3 +40,14 @@ sources:
             data_tests:
               - unique
               - not_null
+      - name: rede_porte_municipio
+        description: >
+          1 linha por município do RJ inteiro (não só os 3 de referência) +
+          competência, com a contagem de estabelecimentos do grupo "ST".
+          Atributo de porte de rede pra "Comparação entre pares" (ver
+          ROADMAP.md) — delete + insert por competência, não série
+          histórica.
+        columns:
+          - name: cod_municipio_ibge6
+            data_tests:
+              - not_null
