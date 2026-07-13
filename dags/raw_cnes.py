@@ -1,10 +1,11 @@
 """Ingestão de estabelecimentos de saúde do CNES em `raw_cnes.estabelecimentos`.
 
-Escopo do collector é fixo (Rio de Janeiro, competência dez/2025) — ver
+Escopo do collector é fixo (3 municípios de referência, os 12 meses de 2025 —
+série histórica, não mais só dez/2025) — ver
 `include/collectors/cnes/run_estabelecimentos.py` e
 `docs/fontes.md#escopo-de-volume-para-o-mvp`. Sem agendamento automático:
-mudar a competência exige mudar o código do collector, então o disparo é
-manual até o escopo virar parametrizável.
+mudar o escopo exige mudar o código do collector, então o disparo é manual
+até o escopo virar parametrizável.
 """
 
 from __future__ import annotations

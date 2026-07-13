@@ -14,41 +14,60 @@ from include.collectors.cnes.db import get_connection
 from include.collectors.cnes.parser import parse_estabelecimentos
 from include.collectors.cnes.repository import ensure_schema, upsert_estabelecimentos
 
-# Escopo MVP (docs/fontes.md#escopo-de-volume-para-o-mvp): 1 município de
-# referência (Rio de Janeiro) e 1 competência de 2025. CNES é cadastro
-# (snapshot mensal), não série de eventos, então uma única competência já
-# retrata o ano; dez/2025 é a mais recente disponível no ano.
+# Escopo MVP (docs/fontes.md#escopo-de-volume-para-o-mvp): 3 municípios de
+# referência, ano de 2025. Diferente da carga original (1 única competência,
+# dez/2025), agora carrega os 12 meses do ano: raw_cnes.estabelecimentos
+# passou a ter chave (codigo_cnes, competencia) em vez de codigo_cnes só,
+# então cada mês vira uma linha nova em vez de sobrescrever a anterior — é
+# o que dá série histórica para a demanda "Histórico de rede CNES" (ver
+# ROADMAP.md). dim_estabelecimento (dbt) segue expondo só a competência mais
+# recente por estabelecimento.
 UF = "RJ"
 ANO = 2025
-MES = 12
+MESES = range(1, 13)
 
 logger = logging.getLogger(__name__)
 
 
 def run() -> int:
-    """Busca, normaliza e grava estabelecimentos do CNES em raw_cnes.estabelecimentos."""
+    """Busca, normaliza e grava os 12 meses de 2025 em raw_cnes.estabelecimentos.
+
+    Processa uma competência (mês) por vez, como run_internacoes.py (SIH):
+    mantém uso de memória limitado a 1 mês e torna a execução retomável.
+    """
     start = time.monotonic()
-    raw_estabelecimentos = fetch_estabelecimentos(UF, ANO, MES)
-    estabelecimentos = parse_estabelecimentos(raw_estabelecimentos)
-    arquivo_origem = source_filename(UF, ANO, MES)
+    total_geral = 0
 
     with get_connection() as conn:
         ensure_schema(conn)
-        total = upsert_estabelecimentos(
-            conn, estabelecimentos, arquivo_origem, ANO, MES
-        )
+
+        for mes in MESES:
+            inicio_mes = time.monotonic()
+            raw_estabelecimentos = fetch_estabelecimentos(UF, ANO, mes)
+            estabelecimentos = parse_estabelecimentos(raw_estabelecimentos)
+            arquivo_origem = source_filename(UF, ANO, mes)
+            total_mes = upsert_estabelecimentos(
+                conn, estabelecimentos, arquivo_origem, ANO, mes
+            )
+            total_geral += total_mes
+            logger.info(
+                "raw_cnes.estabelecimentos: %s linhas carregadas em %.1fs "
+                "(competencia=%s-%02d, fonte=%s)",
+                total_mes,
+                time.monotonic() - inicio_mes,
+                ANO,
+                mes,
+                arquivo_origem,
+            )
 
     elapsed = time.monotonic() - start
     logger.info(
-        "raw_cnes.estabelecimentos: %s linhas carregadas em %.1fs "
-        "(competencia=%s-%02d, fonte=%s)",
-        total,
+        "raw_cnes.estabelecimentos: %s linhas no total, %s competências, em %.1fs",
+        total_geral,
+        len(MESES),
         elapsed,
-        ANO,
-        MES,
-        arquivo_origem,
     )
-    return total
+    return total_geral
 
 
 if __name__ == "__main__":
