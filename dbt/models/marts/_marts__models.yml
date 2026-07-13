@@ -136,7 +136,11 @@ models:
                 field: id_municipio
 
   - name: mart_indicadores_aps
-    description: Indicadores de desempenho do Previne Brasil (2024Q3 — série descontinuada).
+    description: >
+      Indicadores de desempenho do Previne Brasil (2024Q3 — série
+      descontinuada), com parâmetro/meta oficiais (seed_previne_brasil_meta)
+      e `status_meta` derivado (ok/atencao/critico, ver comentário no
+      `.sql` e ROADMAP.md "Metas de APS").
     columns:
       - name: id_municipio
         data_tests:
@@ -148,6 +152,11 @@ models:
       - name: numero_indicador
         data_tests:
           - not_null
+      - name: status_meta
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [ok, atencao, critico]
 
   - name: mart_cobertura_aps_municipio
     description: >

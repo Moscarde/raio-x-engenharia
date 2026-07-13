@@ -167,3 +167,35 @@ seeds:
       - name: descricao_grupo
         data_tests:
           - not_null
+
+  - name: seed_previne_brasil_meta
+    description: >
+      Parâmetro (valor ideal) e meta (valor pactuado) oficiais de cada um
+      dos 7 indicadores de desempenho do Previne Brasil, por
+      `numero_indicador` (mesma chave de `seed_sisab_tipo_indicador`).
+      Fonte: as 7 notas técnicas da Secretaria de Atenção Primária à
+      Saúde/MS (Nota_tecnica_2022_2024_indicador_{1..7}.pdf, em
+      https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/sisab/indicadores_desempenho/),
+      seção "FICHA DE QUALIFICAÇÃO DO INDICADOR", campos PARÂMETRO e META,
+      consultadas em 2026-07-13. Cobertura: 7 de 7 indicadores — todos os
+      PDFs abertos e os 2 valores extraídos diretamente da ficha de cada
+      um (não há indicador do Previne Brasil fora deste conjunto de 7).
+      O indicador 4 tem parâmetro "≥80%" na fonte (piso, não valor exato);
+      gravado aqui como 80. Indicadores 8+ do Previne Brasil (ex.: saúde
+      bucal, criança) não existem — o programa define só estes 7 (ver
+      seed_sisab_tipo_indicador). Metas/parâmetros de indicadores fora do
+      Previne Brasil (ICSAP, cobertura ESF etc.) não têm fonte oficial
+      equivalente identificada e ficam de fora — ver ROADMAP.md "Metas de
+      APS" sobre por que mart_alertas_saude não usa limiar nenhum pra
+      esses.
+    columns:
+      - name: numero_indicador
+        data_tests:
+          - unique
+          - not_null
+      - name: parametro_percentual
+        data_tests:
+          - not_null
+      - name: meta_percentual
+        data_tests:
+          - not_null
