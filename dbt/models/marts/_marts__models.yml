@@ -214,3 +214,25 @@ models:
       - name: valor
         data_tests:
           - not_null
+
+  - name: mart_icsap_municipio
+    description: >
+      Percentual de Internações por Condições Sensíveis à Atenção Primária
+      (ICSAP) por município de residência + ano. Denominador simplificado
+      (total de internações, não só "internações clínicas" da metodologia
+      oficial completa) — ver comentário no `.sql`. Ver ROADMAP.md
+      "Internações ICSAP".
+    columns:
+      - name: id_municipio
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipio')
+                field: id_municipio
+      - name: total_internacoes
+        data_tests:
+          - not_null
+      - name: percentual_icsap
+        data_tests:
+          - not_null

@@ -19,3 +19,17 @@ models:
         data_tests:
           - unique
           - not_null
+
+  - name: int_sih__diagnostico_icsap
+    description: >
+      Resolve cada diagnostico_principal distinto de fct_internacoes pro
+      grupo da Lista Brasileira de ICSAP (seed_icsap_cid10).
+    columns:
+      - name: diagnostico_principal
+        description: >
+          Único por construção — 1 linha por código distinto observado em
+          fct_internacoes. Testado pra pegar overlap acidental entre
+          faixas do seed (grupos deveriam ser disjuntos).
+        data_tests:
+          - unique
+          - not_null

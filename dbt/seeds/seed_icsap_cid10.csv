@@ -1,0 +1,107 @@
+grupo_icsap,descricao_grupo,cid_inicio,cid_fim
+1,Doenças preveníveis por imunização e condições sensíveis,A370,A379
+1,Doenças preveníveis por imunização e condições sensíveis,A360,A369
+1,Doenças preveníveis por imunização e condições sensíveis,A330,A359
+1,Doenças preveníveis por imunização e condições sensíveis,B260,B269
+1,Doenças preveníveis por imunização e condições sensíveis,B060,B069
+1,Doenças preveníveis por imunização e condições sensíveis,B050,B059
+1,Doenças preveníveis por imunização e condições sensíveis,A950,A959
+1,Doenças preveníveis por imunização e condições sensíveis,B160,B169
+1,Doenças preveníveis por imunização e condições sensíveis,G000,G000
+1,Doenças preveníveis por imunização e condições sensíveis,A170,A170
+1,Doenças preveníveis por imunização e condições sensíveis,A190,A199
+1,Doenças preveníveis por imunização e condições sensíveis,A150,A153
+1,Doenças preveníveis por imunização e condições sensíveis,A160,A160
+1,Doenças preveníveis por imunização e condições sensíveis,A162,A162
+1,Doenças preveníveis por imunização e condições sensíveis,A154,A159
+1,Doenças preveníveis por imunização e condições sensíveis,A163,A169
+1,Doenças preveníveis por imunização e condições sensíveis,A171,A179
+1,Doenças preveníveis por imunização e condições sensíveis,A180,A189
+1,Doenças preveníveis por imunização e condições sensíveis,I000,I029
+1,Doenças preveníveis por imunização e condições sensíveis,A510,A539
+1,Doenças preveníveis por imunização e condições sensíveis,B500,B549
+1,Doenças preveníveis por imunização e condições sensíveis,B770,B779
+2,Gastroenterites infecciosas e complicações,E860,E869
+2,Gastroenterites infecciosas e complicações,A000,A099
+3,Anemia,D500,D509
+4,Deficiências nutricionais,E400,E469
+4,Deficiências nutricionais,E500,E649
+5,"Infecções de ouvido, nariz e garganta",H660,H669
+5,"Infecções de ouvido, nariz e garganta",J000,J009
+5,"Infecções de ouvido, nariz e garganta",J010,J019
+5,"Infecções de ouvido, nariz e garganta",J020,J029
+5,"Infecções de ouvido, nariz e garganta",J030,J039
+5,"Infecções de ouvido, nariz e garganta",J060,J069
+5,"Infecções de ouvido, nariz e garganta",J310,J319
+6,Pneumonias bacterianas,J130,J139
+6,Pneumonias bacterianas,J140,J149
+6,Pneumonias bacterianas,J153,J153
+6,Pneumonias bacterianas,J154,J154
+6,Pneumonias bacterianas,J158,J158
+6,Pneumonias bacterianas,J159,J159
+6,Pneumonias bacterianas,J181,J181
+7,Asma,J450,J459
+7,Asma,J460,J469
+8,Doenças pulmonares,J200,J209
+8,Doenças pulmonares,J210,J219
+8,Doenças pulmonares,J400,J409
+8,Doenças pulmonares,J410,J419
+8,Doenças pulmonares,J420,J429
+8,Doenças pulmonares,J430,J439
+8,Doenças pulmonares,J470,J479
+8,Doenças pulmonares,J440,J449
+9,Hipertensão,I100,I109
+9,Hipertensão,I110,I119
+10,Angina,I200,I209
+11,Insuficiência cardíaca,I500,I509
+11,Insuficiência cardíaca,J810,J819
+12,Doenças cerebrovasculares,I630,I679
+12,Doenças cerebrovasculares,I690,I699
+12,Doenças cerebrovasculares,G450,G469
+13,Diabetes mellitus,E100,E100
+13,Diabetes mellitus,E101,E101
+13,Diabetes mellitus,E110,E110
+13,Diabetes mellitus,E111,E111
+13,Diabetes mellitus,E120,E120
+13,Diabetes mellitus,E121,E121
+13,Diabetes mellitus,E130,E130
+13,Diabetes mellitus,E131,E131
+13,Diabetes mellitus,E140,E140
+13,Diabetes mellitus,E141,E141
+13,Diabetes mellitus,E102,E108
+13,Diabetes mellitus,E112,E118
+13,Diabetes mellitus,E122,E128
+13,Diabetes mellitus,E132,E138
+13,Diabetes mellitus,E142,E148
+13,Diabetes mellitus,E109,E109
+13,Diabetes mellitus,E119,E119
+13,Diabetes mellitus,E129,E129
+13,Diabetes mellitus,E139,E139
+13,Diabetes mellitus,E149,E149
+14,Epilepsias,G400,G409
+14,Epilepsias,G410,G419
+15,Infecções no rim e trato urinário,N100,N109
+15,Infecções no rim e trato urinário,N110,N119
+15,Infecções no rim e trato urinário,N120,N129
+15,Infecções no rim e trato urinário,N300,N309
+15,Infecções no rim e trato urinário,N340,N349
+15,Infecções no rim e trato urinário,N390,N390
+16,Infecção da pele e tecido subcutâneo,A460,A469
+16,Infecção da pele e tecido subcutâneo,L010,L019
+16,Infecção da pele e tecido subcutâneo,L020,L029
+16,Infecção da pele e tecido subcutâneo,L030,L039
+16,Infecção da pele e tecido subcutâneo,L040,L049
+16,Infecção da pele e tecido subcutâneo,L080,L089
+17,Doença inflamatória órgãos pélvicos femininos,N700,N709
+17,Doença inflamatória órgãos pélvicos femininos,N710,N719
+17,Doença inflamatória órgãos pélvicos femininos,N720,N729
+17,Doença inflamatória órgãos pélvicos femininos,N730,N739
+17,Doença inflamatória órgãos pélvicos femininos,N750,N759
+17,Doença inflamatória órgãos pélvicos femininos,N760,N769
+18,Úlcera gastrointestinal,K250,K289
+18,Úlcera gastrointestinal,K920,K920
+18,Úlcera gastrointestinal,K921,K921
+18,Úlcera gastrointestinal,K922,K922
+19,Doenças relacionadas ao pré-natal e parto,O230,O239
+19,Doenças relacionadas ao pré-natal e parto,A500,A509
+19,Doenças relacionadas ao pré-natal e parto,P350,P350
