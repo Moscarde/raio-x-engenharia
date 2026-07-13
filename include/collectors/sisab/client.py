@@ -17,6 +17,9 @@ API_BASE_URL = "https://apidadosabertos.saude.gov.br"
 ENDPOINT_INDICADOR_DESEMPENHO = (
     f"{API_BASE_URL}/atencao-primaria/indicador-desempenho-programa-previne-brasil"
 )
+ENDPOINT_CADASTRO_VINCULADO = (
+    f"{API_BASE_URL}/atencao-primaria/cadastro-vinculado-programa-previne-brasil"
+)
 
 # Confirmado contra a API real: o Rio de Janeiro tem 18 linhas por
 # quadrimestre (6 tipos de indicador x 3 visões de equipe), bem abaixo do
@@ -73,5 +76,65 @@ def fetch_indicadores_desempenho(
             f"codigo_municipio={codigo_municipio}, quadrimestre={quadrimestre!r}; "
             "possível truncamento silencioso — aumentar LIMITE_PAGINA ou "
             "implementar paginação via offset."
+        )
+    return linhas
+
+
+def fetch_cadastro_vinculado(
+    codigo_municipio: int, competencia: int, timeout: int = 30
+) -> list[dict]:
+    """Busca todas as linhas de cadastro vinculado do Previne Brasil para município/competência.
+
+    Pagina via offset até a página vir mais curta que LIMITE_PAGINA — a
+    combinação (tipo_equipe, situacao_equipe) fica bem abaixo do limite por
+    município (confirmado: 24 linhas para o Rio de Janeiro em 202412), mas
+    pagina mesmo assim por segurança.
+
+    Exemplo:
+        >>> linhas = fetch_cadastro_vinculado(330455, 202412)
+        >>> linhas[0]["codigo_municipio_ibge"]
+        330455
+    """
+    linhas: list[dict] = []
+    offset = 0
+    while True:
+        pagina = _fetch_pagina_cadastro_vinculado(
+            codigo_municipio, competencia, offset, timeout
+        )
+        linhas.extend(pagina)
+        if len(pagina) < LIMITE_PAGINA:
+            break
+        offset += LIMITE_PAGINA
+    if not linhas:
+        raise RuntimeError(
+            f"DEMAS não retornou cadastro vinculado para codigo_municipio="
+            f"{codigo_municipio}, competencia={competencia} em "
+            f"{ENDPOINT_CADASTRO_VINCULADO}; esperado ao menos 1 registro."
+        )
+    return linhas
+
+
+def _fetch_pagina_cadastro_vinculado(
+    codigo_municipio: int, competencia: int, offset: int, timeout: int
+) -> list[dict]:
+    params = {
+        "codigo_municipio_ibge": codigo_municipio,
+        "competencia_referencia": competencia,
+        "limit": LIMITE_PAGINA,
+        "offset": offset,
+    }
+    response = requests.get(ENDPOINT_CADASTRO_VINCULADO, params=params, timeout=timeout)
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"DEMAS respondeu status {response.status_code} para "
+            f"{ENDPOINT_CADASTRO_VINCULADO} (codigo_municipio={codigo_municipio}, "
+            f"competencia={competencia}); esperado 200 com lista JSON."
+        )
+    corpo = response.json()
+    linhas = corpo.get("sisab_cadastro_vinculado")
+    if linhas is None:
+        raise RuntimeError(
+            "Resposta do DEMAS sem campo 'sisab_cadastro_vinculado' para "
+            f"codigo_municipio={codigo_municipio}, competencia={competencia}: {corpo!r}."
         )
     return linhas

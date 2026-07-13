@@ -125,3 +125,98 @@ def substituir_indicadores_desempenho(
                 )
     conn.commit()
     return len(indicadores)
+
+
+CREATE_TABLE_CADASTRO_VINCULADO_SQL = """
+CREATE TABLE IF NOT EXISTS raw_sisab.cadastro_vinculado (
+    competencia_referencia INTEGER NOT NULL,
+    sigla_unidade_federacao TEXT NOT NULL,
+    -- Código IBGE de 6 dígitos sem dígito verificador, mesmo padrão de
+    -- indicador_desempenho.codigo_municipio.
+    codigo_municipio_ibge INTEGER NOT NULL,
+    nome_municipio TEXT NOT NULL,
+    estimativa_populacional_ibge BIGINT NOT NULL,
+    tipo_equipe INTEGER NOT NULL,
+    sigla_equipe TEXT NOT NULL,
+    situacao_equipe TEXT NOT NULL,
+    pessoas_vinculadas_criterios_ponderacao TEXT NOT NULL,
+    pessoas_vinculadas_equipe_municipio NUMERIC NOT NULL,
+    _loaded_at TIMESTAMPTZ NOT NULL,
+    _source_url TEXT NOT NULL
+);
+"""
+
+DELETE_PARTICAO_CADASTRO_VINCULADO_SQL = """
+DELETE FROM raw_sisab.cadastro_vinculado
+WHERE codigo_municipio_ibge = %(municipio)s
+  AND competencia_referencia = %(competencia)s;
+"""
+
+COLUNAS_INSERT_CADASTRO_VINCULADO = (
+    "competencia_referencia",
+    "sigla_unidade_federacao",
+    "codigo_municipio_ibge",
+    "nome_municipio",
+    "estimativa_populacional_ibge",
+    "tipo_equipe",
+    "sigla_equipe",
+    "situacao_equipe",
+    "pessoas_vinculadas_criterios_ponderacao",
+    "pessoas_vinculadas_equipe_municipio",
+    "_loaded_at",
+    "_source_url",
+)
+
+
+def ensure_schema_cadastro_vinculado(conn: psycopg.Connection) -> None:
+    """Cria o schema raw_sisab e a tabela cadastro_vinculado, se ainda não existirem."""
+    with conn.cursor() as cur:
+        cur.execute(CREATE_SCHEMA_SQL)
+        cur.execute(CREATE_TABLE_CADASTRO_VINCULADO_SQL)
+    conn.commit()
+
+
+def substituir_cadastro_vinculado(
+    conn: psycopg.Connection,
+    linhas: list[dict],
+    municipio: int,
+    competencia: int,
+    source_url: str,
+) -> int:
+    """Substitui a partição (município + competência) com as linhas normalizadas.
+
+    Mesma estratégia de idempotência de substituir_indicadores_desempenho:
+    a API não expõe identificador de linha estável, então a partição
+    inteira é refeita a cada carga.
+    """
+    loaded_at = dt.datetime.now(dt.timezone.utc)
+
+    with conn.cursor() as cur:
+        cur.execute(
+            DELETE_PARTICAO_CADASTRO_VINCULADO_SQL,
+            {"municipio": municipio, "competencia": competencia},
+        )
+
+        with cur.copy(
+            "COPY raw_sisab.cadastro_vinculado "
+            f"({', '.join(COLUNAS_INSERT_CADASTRO_VINCULADO)}) FROM STDIN"
+        ) as copy:
+            for linha in linhas:
+                copy.write_row(
+                    (
+                        linha["competencia_referencia"],
+                        linha["sigla_unidade_federacao"],
+                        linha["codigo_municipio_ibge"],
+                        linha["nome_municipio"],
+                        linha["estimativa_populacional_ibge"],
+                        linha["tipo_equipe"],
+                        linha["sigla_equipe"],
+                        linha["situacao_equipe"],
+                        linha["pessoas_vinculadas_criterios_ponderacao"],
+                        linha["pessoas_vinculadas_equipe_municipio"],
+                        loaded_at,
+                        source_url,
+                    )
+                )
+    conn.commit()
+    return len(linhas)
