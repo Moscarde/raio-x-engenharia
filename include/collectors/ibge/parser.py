@@ -90,3 +90,52 @@ def parse_municipio(raw: dict) -> dict:
 def parse_municipios(raw_municipios: list[dict]) -> list[dict]:
     """Aplica parse_municipio a cada item da lista bruta da API do IBGE."""
     return [parse_municipio(raw) for raw in raw_municipios]
+
+
+# Municípios de referência do MVP (mesmo conjunto do CNES/SIH/SIM/SINASC,
+# aqui pelo id_municipio de 7 dígitos, formato nativo do agregado do IBGE —
+# ver docs/fontes.md#escopo-de-volume-para-o-mvp).
+MUNICIPIOS_REFERENCIA_ID_MUNICIPIO = (3304557, 3303807, 3303500)
+
+
+def parse_populacao_estimada(corpo_agregado: list[dict]) -> list[dict]:
+    """Normaliza a resposta do agregado 6579 (SIDRA) para 1 linha por município.
+
+    Espera o formato retornado por
+    `include.collectors.ibge.client.fetch_populacao_estimada`: uma lista com
+    1 variável, cujas `resultados[].series[]` trazem 1 localidade cada, com
+    `serie` mapeando ano (string) -> população (string).
+
+    Exemplo:
+        >>> parse_populacao_estimada(corpo)[0]["populacao_estimada"]
+        6730729
+    """
+    try:
+        variavel = corpo_agregado[0]
+        series = variavel["resultados"][0]["series"]
+    except (IndexError, KeyError) as exc:
+        raise ValueError(
+            f"Resposta do agregado de população {corpo_agregado!r} sem "
+            "resultados[0].series; formato inesperado da API do IBGE."
+        ) from exc
+
+    linhas = []
+    for item in series:
+        try:
+            localidade = item["localidade"]
+            id_municipio = int(localidade["id"])
+            ano, populacao = next(iter(item["serie"].items()))
+        except (KeyError, StopIteration) as exc:
+            raise ValueError(
+                f"Série de população {item!r} sem localidade.id ou serie "
+                "não vazia; formato inesperado da API do IBGE."
+            ) from exc
+        linhas.append(
+            {
+                "id_municipio": id_municipio,
+                "nome_municipio": localidade["nome"],
+                "ano_referencia": int(ano),
+                "populacao_estimada": int(populacao),
+            }
+        )
+    return linhas
