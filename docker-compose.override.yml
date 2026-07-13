@@ -1,24 +1,8 @@
-# O PostgreSQL de serving roda em outro Compose no host. Processos do host usam
-# POSTGRES_HOST=localhost; o scheduler usa o gateway Docker para alcançar a
-# porta publicada desse serviço. A rede raio-x-data adiciona somente o MinIO.
+# O PostgreSQL de serving roda fora do stack Astro. Processos do host usam
+# POSTGRES_HOST=localhost; o scheduler usa o gateway Docker para alcançá-lo.
 services:
   scheduler:
     environment:
       - POSTGRES_HOST=host.docker.internal
-      - OBJECT_STORAGE_ENDPOINT
-      - OBJECT_STORAGE_REGION
-      - OBJECT_STORAGE_SECURE
-      - OBJECT_STORAGE_LANDING_BUCKET
-      - OBJECT_STORAGE_LAKE_BUCKET
-      - OBJECT_STORAGE_ARTIFACTS_BUCKET
-      - OBJECT_STORAGE_ACCESS_KEY
-      - OBJECT_STORAGE_SECRET_KEY
     extra_hosts:
       - host.docker.internal:host-gateway
-    networks:
-      - default
-      - raio-x-data
-
-networks:
-  raio-x-data:
-    external: true

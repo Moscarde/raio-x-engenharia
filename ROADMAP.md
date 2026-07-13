@@ -26,12 +26,10 @@ rodaram com sucesso; SIA não foi rodado dentro da DAG por levar ~1,5-2h,
 mas a lógica do collector já foi validada fora do Airflow (ver observação
 abaixo).
 
-`docker-compose.override.yml` conecta o `scheduler` (LocalExecutor, onde as
-tasks rodam) à rede `raio-x-data` do MinIO. O banco analítico é externo ao
-Astro e vem do `.env`: processos no host usam `POSTGRES_HOST=localhost`, e o
-scheduler o troca pelo gateway Docker para alcançar a porta publicada pelo
-serviço externo. Exige `astro dev restart` para aplicar mudanças de ambiente
-ou rede.
+O banco analítico é externo ao Astro e vem do `.env`: processos no host usam
+`POSTGRES_HOST=localhost`, e o scheduler o troca pelo gateway Docker para
+alcançar a porta publicada pelo serviço externo. Exige `astro dev restart`
+para aplicar mudanças de ambiente.
 
 ## Status de carga de dados (escopo MVP: Rio de Janeiro + Paraty + Nova Iguaçu)
 
@@ -132,10 +130,10 @@ sobre a população vinculada à eSF / população estimada do IBGE).
 
 Contexto: esta é a mesma feature de coleta de uma tentativa anterior (nesta
 mesma máquina, commits `a6fca75..33fe3e9`, revertidos do `main` via reset
-antes desta sessão) que também migrava o armazenamento raw para um lake
-(Parquet/MinIO/DuckDB). A ideia de coleta (CNES grupo "EP", SISAB cadastro
-vinculado) foi recuperada e reimplementada; a migração para lake foi
-descartada — arquitetura permanece só Postgres, conforme CLAUDE.md.
+antes desta sessão) que também migrava o armazenamento raw para um lake. A
+ideia de coleta (CNES grupo "EP", SISAB cadastro vinculado) foi recuperada e
+reimplementada; a migração para lake foi descartada — arquitetura permanece
+só Postgres, conforme CLAUDE.md.
 
 ### Raw histórico para "Histórico de rede CNES" (2026-07-12)
 

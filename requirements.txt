@@ -4,18 +4,12 @@
 requests
 psycopg[binary]
 python-dotenv
-# Persistência do lake: boto3 publica objetos no MinIO e pyarrow produz os
-# arquivos Parquet. Ambos já são dependências transitivas do pysus, mas são
-# declarados aqui porque o projeto agora os importa diretamente.
-boto3
-pyarrow
-
 # CNES (e outras fontes DATASUS: SIA, SIH, SIM, SINASC) distribuem dados em
 # DBC, formato binário proprietário sobre DBF. pysus resolve download FTP +
 # decompressão DBC em uma lib só, evitando reimplementar o decodificador
 # blast do DATASUS. Traz dependências transitivas pesadas (pandas, pyarrow,
-# duckdb, boto3, sqlalchemy) — aceito deliberadamente por cobrir múltiplas
-# fontes DATASUS futuras, não só o CNES.
+# duckdb, sqlalchemy) — aceito deliberadamente por cobrir múltiplas fontes
+# DATASUS futuras, não só o CNES.
 # Versão fixada (não solta): o collector do SIA usa pysus.data.dbf_reader,
 # módulo interno sem garantia de API estável entre versões (o catálogo
 # público de pysus.sia() é incompleto para arquivos multi-parte — ver
